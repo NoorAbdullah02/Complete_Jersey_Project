@@ -14,11 +14,26 @@ export default function SuccessPage() {
     useEffect(() => {
         if (location.state?.orderId) {
             setOrderData(location.state);
-        } else {
-            // If accessed directly without state, redirect to home
-            const timer = setTimeout(() => navigate('/'), 3000);
-            return () => clearTimeout(timer);
+            return;
         }
+
+        // Try recovering order data from sessionStorage (helps when mobile reloads lose history.state)
+        try {
+            const raw = sessionStorage.getItem('lastOrder');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.orderId) {
+                    setOrderData(parsed);
+                    return;
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        // If no state available, redirect back to home after a short delay
+        const timer = setTimeout(() => navigate('/'), 3000);
+        return () => clearTimeout(timer);
     }, [location, navigate]);
 
     // Always scroll to top when this page mounts or when orderData changes

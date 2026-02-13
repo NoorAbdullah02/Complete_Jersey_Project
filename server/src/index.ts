@@ -17,6 +17,14 @@ import expenseRoutes from './routes/expenses';
 import reportRoutes from './routes/reports';
 
 const app = express();
+// If running behind a proxy (render, heroku, nginx), enable trust proxy so
+// express uses the `X-Forwarded-*` headers (required by express-rate-limit).
+// You can override by setting TRUST_PROXY in environment (true/false).
+const trustProxyEnv = (process.env.TRUST_PROXY || '').toLowerCase();
+if (trustProxyEnv === 'true' || process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+    console.log('Express trust proxy enabled');
+}
 const PORT = process.env.PORT || 3000;
 
 // Security middleware

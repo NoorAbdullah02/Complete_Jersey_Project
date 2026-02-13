@@ -58,12 +58,16 @@ export default function OrderPage() {
             const result = res.data;
 
             if (result.success || result.orderId) {
-                navigate('/success', {
-                    state: {
-                        orderId: result.orderId || 'N/A',
-                        ...finalPayload
-                    }
-                });
+                const payload = {
+                    orderId: result.orderId || 'N/A',
+                    ...finalPayload
+                };
+                try {
+                    sessionStorage.setItem('lastOrder', JSON.stringify(payload));
+                } catch (e) {
+                    // ignore storage failures
+                }
+                navigate('/success', { state: payload });
             } else {
                 throw new Error('Server returned unsuccessful response');
             }
