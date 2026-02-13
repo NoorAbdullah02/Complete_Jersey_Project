@@ -1,0 +1,72 @@
+﻿node : (node:16928) 
+Warning: SECURITY 
+WARNING: The SSL 
+modes 'prefer', 
+'require', and 
+'verify-ca' are 
+treated as aliases 
+for 'verify-full'.
+At line:1 char:1
++ node scripts/dump_o
+rders.js > 
+scripts/dump.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ((node:1   
+ 6928) Wa... 'ver    
+ify-full'.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+In the next major 
+version (pg-connectio
+n-string v3.0.0 and 
+pg v9.0.0), these 
+modes will adopt 
+standard libpq 
+semantics, which 
+have weaker security 
+guarantees.
+
+To prepare for this 
+change:
+- If you want the 
+current behavior, 
+explicitly use 
+'sslmode=verify-full'
+- If you want libpq 
+compatibility now, 
+use 'uselibpqcompat=t
+rue&sslmode=require'
+
+See https://www.postg
+resql.org/docs/curren
+t/libpq-ssl.html for 
+libpq SSL mode 
+definitions.
+(Use `node 
+--trace-warnings 
+...` to show where 
+the warning was 
+created)
+Connected to DB
+
+--- LATEST 5 ORDERS ---
+Order ID: 5, Name: Roja, Status: pending
+  - Item ID: 6, Number: [23], Name: [null], Size: M
+Order ID: 4, Name: Noor, Status: done
+  - Item ID: 4, Number: [30], Name: [NOOR], Size: XL
+  - Item ID: 5, Number: [33], Name: [IMRAN], Size: M
+Order ID: 3, Name: imran, Status: pending
+  - Item ID: 3, Number: [20], Name: [null], Size: XL
+Order ID: 2, Name: Imran, Status: pending
+  (No items found)
+Order ID: 1, Name: Imran, Status: pending
+  (No items found)
+

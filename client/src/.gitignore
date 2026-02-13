@@ -1,0 +1,4 @@
+# Client source folder
+# No build artifacts should be committed from src/
+*.log
+.vscode/

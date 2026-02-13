@@ -1,0 +1,9 @@
+# Server (Node + TypeScript)
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+.vscode/
+*.tsbuildinfo

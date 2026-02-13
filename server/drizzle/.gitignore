@@ -1,0 +1,4 @@
+# Drizzle generated SQL and snapshots
+_journal.json
+0000_snapshot.json
+*.sql

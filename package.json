@@ -1,0 +1,17 @@
+{
+  "name": "jerseyproject",
+  "version": "1.0.0",
+  "description": "This project has been successfully converted to a modern full-stack application.",
+  "main": "index.js",
+   "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "npm install --prefix server --include=dev && npm install --prefix client --include=dev && npm run build --prefix client && npm run build --prefix server",
+    "start": "npm run db:push --prefix server && npm run start --prefix server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
