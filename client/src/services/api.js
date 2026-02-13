@@ -40,7 +40,9 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('🔒 401 Unauthorized detected. Attempting token refresh...');
       if (isRefreshing) {
+        console.log('⏳ Refresh already in progress, queuing request.');
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(token => {
@@ -54,24 +56,29 @@ api.interceptors.response.use(
 
       const refreshToken = localStorage.getItem('adminRefreshToken');
       if (!refreshToken) {
+        console.error('❌ No refresh token found in localStorage. Forcing logout.');
         isRefreshing = false;
         localStorage.removeItem('adminAccessToken');
         return Promise.reject(error);
       }
 
+      console.log('🔄 Calling refresh endpoint...');
       try {
         const { data } = await axios.post(`${API_BASE}/admin/refresh`, { refreshToken });
         const newToken = data.accessToken;
+        console.log('✅ Token refreshed successfully!');
         localStorage.setItem('adminAccessToken', newToken);
         api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
         processQueue(refreshError, null);
         localStorage.removeItem('adminAccessToken');
         localStorage.removeItem('adminRefreshToken');
         if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
+          console.warn('🔄 Redirecting to login page due to failed refresh.');
           window.location.href = '/admin';
         }
         return Promise.reject(refreshError);
@@ -82,6 +89,7 @@ api.interceptors.response.use(
 
     // Truly invalid token or explicit logout needed
     if (error.response?.status === 403) {
+      console.error('🚫 403 Forbidden. Invalid token or session expired. Logging out.');
       localStorage.removeItem('adminAccessToken');
       localStorage.removeItem('adminRefreshToken');
       if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {

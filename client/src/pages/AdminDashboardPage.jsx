@@ -205,6 +205,7 @@ export default function AdminDashboardPage() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [loading, setLoading] = useState(true);
     const [notifying, setNotifying] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
     const [selectedOrders, setSelectedOrders] = useState([]);
 
     // Expenses
@@ -500,6 +501,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleLogout = async () => {
+        setLoggingOut(true);
         const refreshToken = localStorage.getItem('adminRefreshToken');
         if (refreshToken) {
             try {
@@ -510,7 +512,10 @@ export default function AdminDashboardPage() {
         }
         localStorage.removeItem('adminAccessToken');
         localStorage.removeItem('adminRefreshToken');
-        navigate('/admin');
+        // Give a tiny delay for the user to see the "Logging out..." status if it's too fast
+        setTimeout(() => {
+            navigate('/admin');
+        }, 500);
     };
 
     const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -572,11 +577,11 @@ export default function AdminDashboardPage() {
                         <i className="fas fa-user-plus"></i> Register Admin
                     </button>
                     {/* Mass Email Button */}
-                    <button style={styles.btn(notifying ? '#9ca3af' : '#8b5cf6')} onClick={handleNotifyCollection} disabled={notifying}>
+                    <button style={styles.btn(notifying ? '#9ca3af' : '#8b5cf6')} onClick={handleNotifyCollection} disabled={notifying || loggingOut}>
                         <i className={`fas ${notifying ? 'fa-spinner fa-spin' : 'fa-bullhorn'}`}></i> {notifying ? 'Sending...' : 'Notify Collection'}
                     </button>
-                    <button style={styles.btn('#dc3545')} onClick={handleLogout}>
-                        <i className="fas fa-sign-out-alt"></i> Logout
+                    <button style={styles.btn(loggingOut ? '#9ca3af' : '#dc3545')} onClick={handleLogout} disabled={loggingOut}>
+                        <i className={`fas ${loggingOut ? 'fa-spinner fa-spin' : 'fa-sign-out-alt'}`}></i> {loggingOut ? 'Logging out...' : 'Logout'}
                     </button>
                 </div>
             </nav>

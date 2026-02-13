@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+// Load .env from the project root relative to this file
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
 import fs from 'fs';
 import { initDb } from './db/index';
 
@@ -17,13 +18,18 @@ import expenseRoutes from './routes/expenses';
 import reportRoutes from './routes/reports';
 
 const app = express();
-// If running behind a proxy (render, heroku, nginx), enable trust proxy so
-// express uses the `X-Forwarded-*` headers (required by express-rate-limit).
-// You can override by setting TRUST_PROXY in environment (true/false).
-const trustProxyEnv = (process.env.TRUST_PROXY || '').toLowerCase();
-if (trustProxyEnv === 'true' || process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1);
-    console.log('Express trust proxy enabled');
+// Debug environment loading
+console.log('--- Environment Check ---');
+console.log('PORT:', process.env.PORT || '3000 (default)');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED (Safe)' : 'MISSING (Critical!)');
+console.log('JWT_REFRESH_SECRET:', process.env.JWT_REFRESH_SECRET ? 'LOADED (Safe)' : 'MISSING (Critical!)');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+console.log('------------------------');
+// Enable trust proxy for production environments (like Render/Heroku)
+// This is required for express-rate-limit to correctly identify user IPs
+if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', true);
+    console.log('Express trust proxy enabled (set to true)');
 }
 const PORT = process.env.PORT || 3000;
 
@@ -75,7 +81,7 @@ app.get('/api/health', (req, res) => {
 
 // Root - quick info page so visiting :3000 doesn't return the API 404
 app.get('/', (req, res) => {
-        res.type('html').send(`
+    res.type('html').send(`
                 <html>
                     <head><title>Jersey Project</title></head>
                     <body style="font-family: Arial, sans-serif; text-align:center; padding:40px;">

@@ -8,6 +8,11 @@ import { sendEmail, adminVerificationHtml } from '../services/email';
 
 const router = Router();
 
+// Startup check for safety
+if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+    console.warn('⚠️ WARNING: JWT_SECRET or JWT_REFRESH_SECRET is missing! Token management may be unstable.');
+}
+
 // Admin registration
 router.post('/register', async (req: Request, res: Response) => {
     try {
