@@ -68,20 +68,25 @@ export default function OrderForm({ onSubmit, onPriceChange }) {
 
     // GSAP Animations
     useLayoutEffect(() => {
+        const isMobile = window.innerWidth <= 768;
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) return;
+
         const ctx = gsap.context(() => {
             gsap.fromTo('.glass-card',
-                { y: 50, opacity: 0, scale: 0.95 },
-                { y: 0, opacity: 1, scale: 1, duration: 0.8, stagger: 0.2, ease: 'power3.out' }
+                { y: isMobile ? 30 : 50, opacity: 0, scale: isMobile ? 1 : 0.95 },
+                { y: 0, opacity: 1, scale: 1, duration: isMobile ? 0.6 : 0.8, stagger: isMobile ? 0.1 : 0.2, ease: 'power3.out' }
             );
 
             gsap.fromTo('.section-title',
-                { y: -50, opacity: 0 },
-                { y: 0, opacity: 1, duration: 1, ease: 'power3.out' }
+                { y: isMobile ? -30 : -50, opacity: 0 },
+                { y: 0, opacity: 1, duration: isMobile ? 0.8 : 1, ease: 'power3.out' }
             );
         }, formRef);
 
         return () => ctx.revert();
-    }, [items.length]); // Re-animate when items change (add/remove)
+    }, [items.length]);
 
     // Validation & API Refs
     const debouncedNameCheck = useRef(

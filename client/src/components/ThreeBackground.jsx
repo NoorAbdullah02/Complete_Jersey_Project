@@ -23,17 +23,18 @@ const generateSpherePoints = (count, radius) => {
 
 function Stars(props) {
     const ref = useRef();
+    const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth <= 768, []);
+
     // Use manual generation instead of maath
     const sphere = useMemo(() => {
         // Determine device capability and choose point count
-        const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
         const hw = typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4;
-        let count = 3000;
-        if (isMobile || hw <= 2) count = 600;
-        else if (hw <= 4) count = 1200;
-        else count = 2000; // conservative default for most desktops
+        let count = 2000;
+        if (isMobile || hw <= 2) count = 350; // Drastic reduction for mobile/low-end
+        else if (hw <= 4) count = 800;
+        else count = 1500; // conservative default for most desktops
         return generateSpherePoints(count, 1.5);
-    }, []);
+    }, [isMobile]);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -58,11 +59,21 @@ function Stars(props) {
 }
 
 export default function ThreeBackground() {
-    // Lower pixel ratio for performance-sensitive devices
-    const pixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) ? Math.min(1.5, window.devicePixelRatio) : 1;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const pixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) ? Math.min(isMobile ? 1.0 : 1.5, window.devicePixelRatio) : 1;
+
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, background: '#000' }}>
-            <Canvas camera={{ position: [0, 0, 1] }} pixelRatio={pixelRatio} gl={{ antialias: false, powerPreference: 'low-power' }}>
+            <Canvas
+                camera={{ position: [0, 0, 1] }}
+                pixelRatio={pixelRatio}
+                gl={{
+                    antialias: false,
+                    powerPreference: 'high-performance',
+                    stencil: false,
+                    depth: false
+                }}
+            >
                 <Stars />
             </Canvas>
         </div>

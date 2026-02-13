@@ -1,194 +1,77 @@
-# Complete Jersey Project
+# ICE Jersey Project - Official Department Collection
 
-A full-stack Jersey ordering application (React + Vite frontend, Node/Express + TypeScript backend, PostgreSQL via Drizzle ORM) with admin dashboard, payment handling, email notifications (Brevo), and utilities for migrations and maintenance.
+A premium, immersive 3D web application for ordering official department jerseys. Built with a focus on high-end aesthetics, performance, and user experience.
 
-Repository remote:
+![Hero Showcase](client/src/assets/images/latest.webp)
 
-```
-git remote add origin https://github.com/NoorAbdullah02/Complete_Jersey_Project.git
-```
+## 🚀 Key Features
 
-## Features (brief)
-- Customer order flow with multi-item jersey configuration and payment (online or cash/CR).
-- Payment validation: online payments require a transaction ID; cash/CR is recorded as `CASH-TO-CR` in `transactions` table.
-- Email notifications via Brevo (order confirmations and admin notifications).
-- Admin dashboard (React) with order management, bulk status updates, expenses, reports, and mass notifications.
-- Friendly UI: toast messages, confirm modal, ErrorBoundary, and reduced heavy background work for better performance.
-- Safe migration tooling: `scripts/auto_drizzle_push.ts` to sanitize & apply drizzle-generated SQL non-interactively (use carefully, review in production).
+- **Immersive 3D Experience**: Integrated Three.js stars background for a futuristic feel.
+- **Ultra-Modern UI**: Premium "Cyber-Glass" design system with massive glassmorphism and acrylic effects.
+- **Dynamic Animations**: Seamless transitions and micro-interactions powered by GSAP (GreenSock).
+- **Mobile Optimized**: Performance-tuned for mobile devices with adaptive point counts and reduced GPU load.
+- **Professional Order System**: Segmented controls for jersey customization (Name, Number, Size, Sleeve Type).
+- **Secure Payment Flow**: Integrated multi-provider mobile banking payment process (bKash & Nagad).
+- **Admin Suite**: Dedicated dashboard for managing orders and verifying user authenticity.
 
-## Repo structure (top-level)
-- `server/` - TypeScript backend (Express, Drizzle ORM, migration and utility scripts)
-- `client/` - React + Vite frontend app (source in `client/src`)
-- `Frontend/` - standalone static admin HTML (legacy/static alternative)
-- `client/public` - static assets
-- `drizzle/` - generated migration SQL files
+## 🛠️ Tech Stack
 
-## Prerequisites
-- Node.js (recommended v20+)
-- npm or yarn
-- PostgreSQL database
-- (optional) Yarn/PNPM
+### Frontend (Client)
+- **Framework**: Vite + React
+- **3D Engine**: Three.js (@react-three/fiber & @react-three/drei)
+- **Animations**: GSAP & AOS (Animate On Scroll)
+- **Styling**: Vanilla CSS (Modern CSS3 features) & Bootstrap 5
+- **Routing**: React Router DOM v7
 
-## Environment variables
-Create a `.env` file in `server/` (and/or set in your environment). Important variables:
+### Backend (Server)
+- **Environment**: Node.js + Express
+- **Language**: TypeScript
+- **Database**: PostgreSQL with Sequelize ORM
+- **Authentication**: JWT-based secure sessions
 
-- `DATABASE_URL` - Postgres connection string (required)
-- `BREVO_API_KEY` - Brevo (Sendinblue) API key for sending emails
-- `BREVO_FROM_EMAIL` - Verified sender email for Brevo
-- `ADMIN_EMAIL` - Optional admin email to receive notifications
-- `PORT` - Server port (default 3000)
-- `NODE_ENV` - `development` or `production`
+## 📦 Getting Started
 
-Example `.env` (do NOT commit):
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL DATABASE
 
-```
-DATABASE_URL=postgres://user:pass@localhost:5432/jerseydb
-BREVO_API_KEY=your_brevo_api_key
-BREVO_FROM_EMAIL=verified@yourdomain.com
-ADMIN_EMAIL=admin@yourdomain.com
-PORT=3000
-NODE_ENV=development
-```
+### Installation
 
-## Install & Run (development)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd JerseyProject
+   ```
 
-1. Clone
+2. **Frontend Setup**
+   ```bash
+   cd client
+   npm install
+   npm run dev
+   ```
 
-```bash
-git clone https://github.com/NoorAbdullah02/Complete_Jersey_Project.git
-cd Complete_Jersey_Project
-```
+3. **Backend Setup**
+   ```bash
+   cd server
+   npm install
+   # Configure your .env file with DB credentials
+   npm run dev
+   ```
 
-2. Install server deps
+## 🔌 API Endpoints (Highlights)
 
-```bash
-cd server
-npm install
-# or: pnpm install
-```
+- `GET /api/health`: Check server status.
+- `POST /api/orders/submit`: Submit a new jersey order.
+- `GET /api/orders/check-number/:num`: Real-time jersey number availability check.
+- `POST /api/admin/login`: Secure admin entry point.
 
-3. Install client deps
+## 📱 Performance Optimization
 
-```bash
-cd ../client
-npm install
-```
+The project implements several advanced optimization techniques:
+- **Conditional Rendering**: Expensive Three.js points are reduced on mobile.
+- **GPU Capping**: Pixel ratios are limited on slower devices to prevent lag.
+- **Safety Nets**: CSS-level AOS overrides ensure content visibility even if JS execution is delayed.
 
-4. Start backend and frontend dev servers (in separate terminals)
+## 📄 License
 
-```bash
-# terminal 1
-cd server
-npm run dev
-
-# terminal 2
-cd client
-npm run dev
-```
-
-Frontend dev server runs on Vite (default `http://127.0.0.1:5173`) and proxies `/api` to the backend (server expected at `http://localhost:3000`).
-
-## Build & Production
-
-1. Build client
-
-```bash
-cd client
-npm run build
-```
-
-2. Build/start server
-
-```bash
-cd server
-npm run build
-npm start   # or `node dist/index.js`
-```
-
-The server is configured to serve `client/dist` in production if present.
-
-## Database migrations
-
-- The project uses Drizzle (drizzle-kit) for migrations. In development you may generate migrations with `npx drizzle-kit generate`.
-- A helper exists to sanitize and apply generated SQL non-interactively: `server/scripts/auto_drizzle_push.ts`. This script removes destructive clauses and wraps constraint/column additions to be idempotent. Use on development/staging only and always back up your DB before running in production.
-
-Example: (from `server/`)
-
-```bash
-npx tsx scripts/auto_drizzle_push.ts
-```
-
-## Email testing
-
-There is a test script to validate Brevo configuration: `server/scripts/test_email_config.ts` — run it after setting `BREVO_API_KEY` and `BREVO_FROM_EMAIL`.
-
-```bash
-cd server
-npx tsx scripts/test_email_config.ts
-```
-
-## Important behaviors
-- Transactions: when an order is created the server will insert a row in the `transactions` table. Online payments require a transaction id; cash/CR orders are recorded with `transaction_ref = 'CASH-TO-CR'`.
-- Admin confirm modal + toasts: Admin pages use a friendly confirm modal and toast messages (React) and the static `Frontend/admin.html` also includes toasts and a modal fallback.
-- ErrorBoundary: The `SuccessPage` is wrapped with an `ErrorBoundary` to show helpful fallbacks on runtime errors.
-
-## Troubleshooting
-- Port in use: If `EADDRINUSE` occurs, stop the process occupying the port or change `PORT`.
-- Drizzle push errors: If `drizzle-kit push` tries to drop constraints/columns unexpectedly, review generated SQL under `server/drizzle` and prefer running the safe auto script or craft idempotent migration SQL.
-- Email not delivered: Brevo returning `201` indicates acceptance; check Brevo dashboard for bounces/spam filters and ensure `BREVO_FROM_EMAIL` is verified.
-
-## Dev tips for performance & debugging
-- The Three.js background is optimized to reduce particle counts and pixel ratio on low-end devices; remove or lazy-load `ThreeBackground` if you need maximum responsiveness.
-- Open browser console and network tab to view API errors. The server logs errors to console (check server terminal).
-
-## Contributing
-- Fork the repo, create a feature branch, and open a PR. Keep migrations minimal and reviewed.
-
-## License & Credits
-- Put your preferred license here.
-
----
-If you want, I can also:
-- Add example `.env.example` file.
-- Add step-by-step screenshots for admin flows.
-- Run the dev servers and verify the main flows and send a short report.
-
-Feel free to tell me what you'd like next.
-# Jersey Project Conversion
-
-This project has been successfully converted to a modern full-stack application.
-
-- **Frontend**: React + Vite (in `client/`)
-- **Backend**: Node.js + Express + TypeScript + Drizzle ORM (in `server/`)
-- **Database**: PostgreSQL (requires local installation)
-
-## Quick Start
-
-1.  **Configure Environment**:
-    -   Verify `server/.env` settings (database credentials, email API key).
-    -   Ensure PostgreSQL is running and database `jersey_db` exists.
-
-2.  **Run Application**:
-    -   Double-click `start-app.bat` in the root folder.
-    -   Select Option 4 to start both backend and frontend.
-
-## Features Implemented
-
-### Frontend
--   **Exact UI Replica**: All animations, glassmorphism, and layouts preserved.
--   **Components**: Particles background, Network status, Loading overlay, Order form, Payment modal, Size chart.
--   **Admin Dashboard**: Authenticated route with Overview, Order Management, Expenses, and Reports.
-
-### Backend
--   **API**: RESTful endpoints for Orders and Admin actions.
--   **Database**: PostgreSQL schema with Drizzle ORM.
--   **Security**: JWT Authentication, Helmet, Rate Limiting, Input Validation.
--   **Reporting**: Excel export for various report types.
--   **Email**: Integration with Brevo for transactional emails.
-
-## Commands
-
--   **Frontend Dev**: `cd client && npm run dev`
--   **Backend Dev**: `cd server && npm run dev`
--   **Build Backend**: `cd server && npm run build`
--   **Generate Migration**: `cd server && npx drizzle-kit generate`
+This project is developed for the Department of Information and Communication Engineering (BAUET). All rights reserved.

@@ -59,7 +59,7 @@ body {
     }
 
     .hero-title {
-        font-size: 2.5rem !important;
+        font-size: clamp(2rem, 8vw, 2.5rem) !important;
     }
 
     .section-title {
@@ -266,14 +266,16 @@ body {
 .main-container {
     background: var(--glass);
     backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
     border: 1px solid var(--glass-border);
-    border-radius: 45px;
-    margin: -80px 20px 50px 20px;
+    border-radius: clamp(20px, 5vw, 45px);
+    margin: -80px clamp(10px, 4vw, 20px) 50px clamp(10px, 4vw, 20px);
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6),
         inset 0 0 20px rgba(255, 255, 255, 0.02);
     position: relative;
     z-index: 10;
     overflow: hidden;
+    will-change: transform, opacity;
 }
 
 .main-container::before {
@@ -332,7 +334,7 @@ body {
 
 .jersey-title {
     font-family: 'Orbitron', monospace;
-    font-size: 3.5rem;
+    font-size: clamp(1.8rem, 6vw, 3.5rem);
     font-weight: 800;
     color: white;
     margin-bottom: 25px;
@@ -544,13 +546,13 @@ body {
 .section-title {
     text-align: center;
     font-family: 'Orbitron', monospace;
-    font-size: 3rem;
+    font-size: clamp(1.5rem, 5vw, 3rem);
     font-weight: 900;
     background: linear-gradient(135deg, #fff, var(--primary), var(--accent));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 60px;
+    margin-bottom: clamp(30px, 8vw, 60px);
     text-transform: uppercase;
     letter-spacing: 4px;
     filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
@@ -2507,6 +2509,14 @@ body {
     .jersey-item-card {
         padding: 16px !important;
         border-radius: 22px !important;
+    }
+
+    .main-container,
+    .hero-header,
+    .glass-morphism,
+    .order-section {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
     }
 }
 
