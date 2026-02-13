@@ -4,7 +4,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { Client } from 'pg';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Load environment from project server/.env when running compiled JS from dist/scripts
+// __dirname (when compiled) -> <repo>/server/dist/scripts
+// so server/.env is two levels up: ../../.env
+const envPath = path.resolve(__dirname, '..', '..', '.env');
+console.log(`Loading env from ${envPath}`);
+dotenv.config({ path: envPath });
 
 function run(cmd: string) {
   console.log('> ' + cmd);

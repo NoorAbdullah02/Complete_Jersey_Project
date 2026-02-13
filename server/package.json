@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:push": "tsx scripts/auto_drizzle_push.ts"
+    "db:push": "npm run build && node dist/scripts/auto_drizzle_push.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
