@@ -32,6 +32,17 @@ body {
     min-height: 100vh;
     color: var(--text-main) !important;
     overflow-x: hidden;
+    position: relative;
+}
+
+/* AOS Safety Net - Ensure elements are visible on small/medium screens even if AOS fails */
+@media (max-width: 800px) {
+    [data-aos] {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+        visibility: visible !important;
+    }
 }
 
 /* Mobile Fixes */
@@ -190,7 +201,7 @@ body {
 
 .hero-content {
     position: relative;
-    z-index: 2;
+    z-index: 10;
 }
 
 .hero-title {
@@ -261,7 +272,7 @@ body {
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6),
         inset 0 0 20px rgba(255, 255, 255, 0.02);
     position: relative;
-    z-index: 3;
+    z-index: 10;
     overflow: hidden;
 }
 

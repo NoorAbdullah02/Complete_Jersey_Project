@@ -14,6 +14,7 @@ import PaymentModal from '../components/PaymentModal';
 import SizeChartModal from '../components/SizeChartModal';
 import AlertMessages from '../components/AlertMessages';
 import Footer from '../components/Footer';
+import ErrorBoundary from '../components/ErrorBoundary'; // Added for stability
 
 import { healthCheck, submitOrder } from '../services/api';
 
@@ -29,10 +30,11 @@ export default function OrderPage() {
     useEffect(() => {
         const isMobile = window.innerWidth <= 768;
         AOS.init({
-            duration: isMobile ? 500 : 1000,
+            duration: isMobile ? 400 : 1000,
             once: true,
-            offset: isMobile ? 50 : 100,
-            disable: window.innerWidth < 480,
+            offset: isMobile ? 20 : 100,
+            disable: window.innerWidth < 400,
+            startEvent: 'DOMContentLoaded',
         });
 
         healthCheck()
@@ -98,17 +100,21 @@ export default function OrderPage() {
 
     return (
         <>
-            <ThreeBackground />
+            <ErrorBoundary>
+                <ThreeBackground />
+            </ErrorBoundary>
             {/* <Particles />  -- Removed legacy 2D particles in favor of Three.js */}
             <NetworkStatus />
             <LoadingOverlay show={loading} message={loadingMsg} />
 
-            <HeroHeader />
+            <ErrorBoundary>
+                <HeroHeader />
 
-            <div className="main-container container-fluid" data-aos="fade-up" style={{ position: 'relative', zIndex: 1 }}>
-                <JerseyShowcase price={price} />
-                <OrderForm onSubmit={handleFormSubmit} onPriceChange={setPrice} />
-            </div>
+                <div className="main-container container-fluid" data-aos="fade-up" style={{ position: 'relative', zIndex: 10 }}>
+                    <JerseyShowcase price={price} />
+                    <OrderForm onSubmit={handleFormSubmit} onPriceChange={setPrice} />
+                </div>
+            </ErrorBoundary>
 
             <AlertMessages
                 type={alert.type}
