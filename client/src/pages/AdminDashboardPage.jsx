@@ -4,8 +4,10 @@ import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import {
     verifyToken, getOrders, getStats, updateOrderStatus, updateOrder, deleteOrder,
-    getExpenses, addExpense, updateExpense, deleteExpense, downloadReport, notifyCollection, bulkUpdateOrders, adminLogout
+    getExpenses, addExpense, updateExpense, deleteExpense, downloadReport, notifyCollection, bulkUpdateOrders, adminLogout,
+    getPasskeyRegisterOptions, verifyPasskeyRegister, listPasskeys, renamePasskey, deletePasskey
 } from '../services/api';
+import { startRegistration } from '@simplewebauthn/browser';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
@@ -207,6 +209,12 @@ export default function AdminDashboardPage() {
     const [notifying, setNotifying] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const [selectedOrders, setSelectedOrders] = useState([]);
+    const [registeringPasskey, setRegisteringPasskey] = useState(false);
+    const [passkeys, setPasskeys] = useState([]);
+    const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
+    const [showPasskeyNameModal, setShowPasskeyNameModal] = useState(false);
+    const [passkeyName, setPasskeyName] = useState('');
+    const [passkeyNameCallback, setPasskeyNameCallback] = useState(null);
 
     // Expenses
     const [expenses, setExpenses] = useState([]);
@@ -290,10 +298,27 @@ export default function AdminDashboardPage() {
                 });
             });
             setBatches(Object.values(batchMap).sort((a, b) => b.count - a.count));
+            loadPasskeys();
         } catch (err) {
             console.error('Load data error:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadPasskeys = async () => {
+        try {
+            const res = await listPasskeys();
+            setPasskeys(res.data.passkeys || []);
+            // If user has no passkeys, show a subtle prompt after a few seconds
+            if ((res.data.passkeys || []).length === 0) {
+                const dismissed = localStorage.getItem('passkeyPromptDismissed');
+                if (!dismissed) {
+                    setTimeout(() => setShowPasskeyPrompt(true), 3000);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load passkeys:', e);
         }
     };
 
@@ -518,6 +543,57 @@ export default function AdminDashboardPage() {
         }, 500);
     };
 
+    const handleRegisterPasskey = () => {
+        setPasskeyName('My Passkey');
+        setPasskeyNameCallback(() => async (name) => {
+            try {
+                setRegisteringPasskey(true);
+                const optionsRes = await getPasskeyRegisterOptions();
+                const options = optionsRes.data;
+
+                const attResp = await startRegistration({ optionsJSON: options });
+
+                await verifyPasskeyRegister(attResp, name);
+                showToast('Passkey registered successfully!', 'success');
+                setShowPasskeyPrompt(false);
+                loadPasskeys();
+            } catch (err) {
+                console.error('Passkey registration failed:', err);
+                const msg = err.response?.data?.error || err.message || 'Passkey registration failed';
+                showToast(msg, 'error');
+            } finally {
+                setRegisteringPasskey(false);
+            }
+        });
+        setShowPasskeyNameModal(true);
+    };
+
+    const handleRenamePasskey = (id, currentName) => {
+        setPasskeyName(currentName);
+        setPasskeyNameCallback(() => async (name) => {
+            try {
+                await renamePasskey(id, name);
+                showToast('Passkey renamed', 'success');
+                loadPasskeys();
+            } catch (err) {
+                showToast('Failed to rename: ' + (err.response?.data?.error || err.message), 'error');
+            }
+        });
+        setShowPasskeyNameModal(true);
+    };
+
+    const handleDeletePasskey = async (id) => {
+        const ok = await showConfirm('Delete this Passkey? You will no longer be able to use this device for biometric login.', 'Delete Passkey');
+        if (!ok) return;
+        try {
+            await deletePasskey(id);
+            showToast('Passkey removed', 'success');
+            loadPasskeys();
+        } catch (err) {
+            showToast('Failed to delete: ' + (err.response?.data?.error || err.message), 'error');
+        }
+    };
+
     const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
     const renderItems = (order) => {
@@ -589,10 +665,22 @@ export default function AdminDashboardPage() {
             <div style={styles.container}>
                 {/* Tabs */}
                 <div style={styles.tabs}>
-                    {['overview', 'registrations', 'batches', 'expenses', 'reports'].map((tab) => (
-                        <button key={tab} style={styles.tab(activeTab === tab)} onClick={() => setActiveTab(tab)}>
-                            <i className={`fas fa-${tab === 'overview' ? 'chart-pie' : tab === 'registrations' ? 'user-friends' : tab === 'batches' ? 'layer-group' : tab === 'expenses' ? 'receipt' : 'file-contract'}`}></i>{' '}
+                    {['overview', 'registrations', 'batches', 'expenses', 'reports', 'security'].map((tab) => (
+                        <button
+                            key={tab}
+                            style={styles.tab(activeTab === tab)}
+                            onClick={() => setActiveTab(tab)}
+                        >
+                            <i className={`fas fa-${tab === 'overview' ? 'chart-pie' : tab === 'registrations' ? 'user-friends' : tab === 'batches' ? 'layer-group' : tab === 'expenses' ? 'receipt' : tab === 'reports' ? 'file-contract' : 'shield-alt'}`}
+                                style={tab === 'security' && passkeys.length === 0 ? { animation: 'pulse-glow 2s infinite' } : {}}>
+                            </i>{' '}
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'security' && passkeys.length === 0 && (
+                                <span style={{
+                                    width: '8px', height: '8px', background: '#f59e0b',
+                                    borderRadius: '50%', marginLeft: '5px', display: 'inline-block'
+                                }}></span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -600,6 +688,45 @@ export default function AdminDashboardPage() {
                 {/* ====== OVERVIEW ====== */}
                 {activeTab === 'overview' && (
                     <>
+                        {passkeys.length === 0 && (
+                            <div style={{
+                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                                border: '1px solid rgba(99, 102, 241, 0.4)',
+                                borderRadius: '16px',
+                                padding: '20px',
+                                marginBottom: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                backdropFilter: 'blur(10px)'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{
+                                        width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,158,11,0.1)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', color: '#f59e0b'
+                                    }}>
+                                        <i className="fas fa-key"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style={{ margin: 0, color: '#fff' }}>Secure Your Account with Passkeys</h4>
+                                        <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+                                            Passwordless login is now available! Register your device to login faster using biometric authentication.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setActiveTab('security')}
+                                    style={{
+                                        ...styles.btn('#6366f1'),
+                                        padding: '10px 20px',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    Setup Now
+                                </button>
+                            </div>
+                        )}
+
                         <div style={styles.statsGrid}>
                             <div style={styles.statCard('#6366f1')} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                                 <i className="fas fa-shopping-bag" style={styles.statIcon('#6366f1')}></i>
@@ -641,66 +768,77 @@ export default function AdminDashboardPage() {
                             <h3 style={{ marginBottom: '24px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <i className="fas fa-chart-line" style={{ color: '#6366f1' }}></i> Financial Trends
                             </h3>
-                            <div style={{ height: '350px', width: '100%' }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                            </linearGradient>
-                                            <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                                        <XAxis
-                                            dataKey="date"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-                                        />
-                                        <YAxis
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-                                            tickFormatter={(value) => `৳${value}`}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{
-                                                background: 'rgba(15,23,42,0.9)',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                borderRadius: '12px',
-                                                backdropFilter: 'blur(10px)',
-                                                fontSize: '14px',
-                                                color: '#fff'
-                                            }}
-                                            itemStyle={{ padding: '2px 0' }}
-                                        />
-                                        <Legend verticalAlign="top" height={36} />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="revenue"
-                                            name="Revenue"
-                                            stroke="#6366f1"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorRev)"
-                                            animationDuration={1500}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="expense"
-                                            name="Expenses"
-                                            stroke="#ef4444"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorExp)"
-                                            animationDuration={1500}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                            <div style={{ height: '350px', width: '100%', position: 'relative', minHeight: '350px' }}>
+                                {chartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                                            />
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                                                tickFormatter={(value) => `৳${value}`}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    background: 'rgba(15,23,42,0.9)',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    borderRadius: '12px',
+                                                    backdropFilter: 'blur(10px)',
+                                                    fontSize: '14px',
+                                                    color: '#fff'
+                                                }}
+                                                itemStyle={{ padding: '2px 0' }}
+                                            />
+                                            <Legend verticalAlign="top" height={36} />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                name="Revenue"
+                                                stroke="#6366f1"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorRev)"
+                                                animationDuration={1500}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="expense"
+                                                name="Expenses"
+                                                stroke="#ef4444"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorExp)"
+                                                animationDuration={1500}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div style={{
+                                        height: '100%', display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center',
+                                        color: 'rgba(255,255,255,0.3)', gap: '10px'
+                                    }}>
+                                        <i className="fas fa-chart-area" style={{ fontSize: '2rem' }}></i>
+                                        <span>No financial data available for the current period</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1025,7 +1163,156 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'security' && (
+                    <div style={styles.card}>
+                        <h3 style={{ marginBottom: '24px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="fas fa-shield-alt" style={{ color: '#6366f1' }}></i> Security Settings
+                        </h3>
+
+                        <div style={{
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            marginBottom: '32px'
+                        }}>
+                            <h4 style={{ color: '#fff', marginBottom: '12px' }}>
+                                <i className="fas fa-fingerprint" style={{ marginRight: '8px' }}></i> Passkey Authentication
+                            </h4>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '20px' }}>
+                                Passkeys are a safer and easier replacement for passwords. With a passkey, you can sign in to your admin account using your device's biometric sensors (like FaceID or Fingerprint) or a hardware security key.
+                            </p>
+
+                            <button
+                                onClick={handleRegisterPasskey}
+                                disabled={registeringPasskey}
+                                style={{
+                                    ...styles.btn('linear-gradient(135deg, #6366f1, #8b5cf6)'),
+                                    padding: '12px 24px',
+                                    fontSize: '1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px'
+                                }}
+                            >
+                                {registeringPasskey ? (
+                                    <><i className="fas fa-spinner fa-spin"></i> Setting Up...</>
+                                ) : (
+                                    <><i className="fas fa-plus"></i> Add New Passkey</>
+                                )}
+                            </button>
+                        </div>
+
+                        {passkeys.length > 0 && (
+                            <div style={{ marginTop: '32px' }}>
+                                <h4 style={{ color: '#fff', marginBottom: '16px' }}>Registered Passkeys</h4>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                                <th style={{ textAlign: 'left', padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Name</th>
+                                                <th style={{ textAlign: 'left', padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Device Type</th>
+                                                <th style={{ textAlign: 'left', padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Created</th>
+                                                <th style={{ textAlign: 'right', padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {passkeys.map(pk => (
+                                                <tr key={pk.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '12px' }}>{pk.name || 'Unnamed Key'}</td>
+                                                    <td style={{ padding: '12px', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>{pk.credential_device_type}</td>
+                                                    <td style={{ padding: '12px', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(pk.created_at).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                                                        <button
+                                                            onClick={() => handleRenamePasskey(pk.id, pk.name)}
+                                                            style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', marginRight: '16px' }}
+                                                            title="Rename"
+                                                        >
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeletePasskey(pk.id)}
+                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                                            title="Delete"
+                                                        >
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
+                            <p><i className="fas fa-info-circle"></i> After registration, you'll be able to login using the "Sign in with Passkey" option on the login page.</p>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Passkey Setup Prompt */}
+            {showPasskeyPrompt && (
+                <div style={{
+                    position: 'fixed', bottom: '24px', right: '24px', width: '350px',
+                    background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                    border: '1px solid rgba(99, 102, 241, 0.4)',
+                    borderRadius: '20px', padding: '24px', zIndex: 900,
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                    animation: 'slideUp 0.5s ease'
+                }}>
+                    <button
+                        onClick={() => {
+                            setShowPasskeyPrompt(false);
+                            localStorage.setItem('passkeyPromptDismissed', 'true');
+                        }}
+                        style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}
+                    >
+                        <i className="fas fa-times"></i>
+                    </button>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{
+                            width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#6366f1'
+                        }}>
+                            <i className="fas fa-shield-alt"></i>
+                        </div>
+                        <div>
+                            <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '8px' }}>Secure Your Account</h4>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', lineHeight: '1.4', marginBottom: '16px' }}>
+                                Add a Passkey for faster and more secure biometric login. No more passwords!
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setActiveTab('security');
+                                    setShowPasskeyPrompt(false);
+                                }}
+                                style={{
+                                    background: '#6366f1', color: '#fff', border: 'none', padding: '8px 16px',
+                                    borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                Get Started
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slideUp {
+                    from { transform: translateY(100px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes pulse-glow {
+                    0% { transform: scale(1); opacity: 0.8; }
+                    50% { transform: scale(1.2); opacity: 1; color: #f59e0b; }
+                    100% { transform: scale(1); opacity: 0.8; }
+                }
+            `}</style>
 
             {/* Edit Order Modal */}
             {showEditModal && (
@@ -1178,6 +1465,86 @@ export default function AdminDashboardPage() {
                                 <button type="submit" style={styles.btn('#10b981')}>Save Changes</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Passkey Name Modal */}
+            {showPasskeyNameModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(10px)'
+                }}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(30,41,59,0.95), rgba(15,23,42,0.95))',
+                        padding: '32px', borderRadius: '30px', border: '1px solid rgba(99,102,241,0.5)',
+                        width: '90%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8)',
+                        animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}>
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <div style={{
+                                width: '60px', height: '60px', borderRadius: '20px',
+                                background: 'rgba(99,102,241,0.1)', color: '#6366f1',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '1.8rem', margin: '0 auto 16px'
+                            }}>
+                                <i className="fas fa-tag"></i>
+                            </div>
+                            <h3 style={{ fontFamily: "'Orbitron', monospace", color: '#fff', fontSize: '1.4rem' }}>Name Your Passkey</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginTop: '8px' }}>
+                                Give your device a recognizable name
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: '24px' }}>
+                            <input
+                                style={{
+                                    ...styles.input,
+                                    fontSize: '1.1rem',
+                                    textAlign: 'center',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '16px'
+                                }}
+                                autoFocus
+                                value={passkeyName}
+                                onChange={(e) => setPasskeyName(e.target.value)}
+                                placeholder="e.g. Work MacBook Pro"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && passkeyName.trim()) {
+                                        passkeyNameCallback(passkeyName.trim());
+                                        setShowPasskeyNameModal(false);
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <button
+                                onClick={() => setShowPasskeyNameModal(false)}
+                                style={{
+                                    ...styles.btn('#475569'),
+                                    flex: 1, padding: '14px', borderRadius: '15px'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (passkeyName.trim()) {
+                                        passkeyNameCallback(passkeyName.trim());
+                                        setShowPasskeyNameModal(false);
+                                    }
+                                }}
+                                style={{
+                                    ...styles.btn('#6366f1'),
+                                    flex: 1, padding: '14px', borderRadius: '15px'
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

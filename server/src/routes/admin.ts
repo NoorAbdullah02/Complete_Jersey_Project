@@ -5,6 +5,10 @@ import crypto from 'crypto';
 import { getDb } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { sendEmail, adminVerificationHtml } from '../services/email';
+import { validate } from '../middleware/validate';
+import { adminLoginSchema, adminRegisterSchema } from '../schemas';
+import { authorize } from '../middleware/rbac';
+import { logActivity } from '../utils/logger';
 
 const router = Router();
 
@@ -13,23 +17,34 @@ if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
     console.warn('⚠️ WARNING: JWT_SECRET or JWT_REFRESH_SECRET is missing! Token management may be unstable.');
 }
 
-// Admin registration
-router.post('/register', async (req: Request, res: Response) => {
+// Admin registration - Restricted to existing admins (except for the first user)
+router.post('/register', validate(adminRegisterSchema), async (req: Request, res: Response) => {
     try {
-        const { username, name, email, password } = req.body;
+        const { username, name, email, password, role } = req.body;
+        const currentAdminId = (req as AuthRequest).user?.id || null;
 
-        if (!username || !email || !password) {
-            res.status(400).json({ error: 'Username, email, and password are required' });
-            return;
-        }
-
-        if (password.length < 6) {
-            res.status(400).json({ error: 'Password must be at least 6 characters' });
-            return;
-        }
-
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
+            // Check if this is the first user
+            const userCount = await client.query('SELECT COUNT(*) FROM admin_users');
+            const isFirstUser = parseInt(userCount.rows[0].count) === 0;
+
+            // If not the first user, require authentication and 'admin' role
+            if (!isFirstUser) {
+                // We manually handle this here because we want to allow the first user without auth
+                const authHeader = req.headers['authorization'];
+                const token = authHeader && authHeader.split(' ')[1];
+                if (!token) return res.status(401).json({ error: 'Auth required for registration' });
+
+                try {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+                    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Only admins can register others' });
+                    // Continue...
+                } catch (e) {
+                    return res.status(401).json({ error: 'Invalid token' });
+                }
+            }
+
             // Check if username/email exists
             const existing = await client.query(
                 'SELECT id FROM admin_users WHERE username = $1 OR email = $2',
@@ -37,27 +52,24 @@ router.post('/register', async (req: Request, res: Response) => {
             );
 
             if (existing.rows.length > 0) {
-                res.status(409).json({ error: 'Username or email already exists' });
-                return;
+                return res.status(409).json({ error: 'Username or email already exists' });
             }
 
             const passwordHash = await bcrypt.hash(password, 12);
             const verificationToken = crypto.randomBytes(32).toString('hex');
 
-            const userCount = await client.query('SELECT COUNT(*) FROM admin_users');
-            const isFirstUser = parseInt(userCount.rows[0].count) === 0;
-
             await client.query(
-                'INSERT INTO admin_users (username, name, email, password_hash, is_verified, verification_token) VALUES ($1, $2, $3, $4, $5, $6)',
-                [username.trim(), name?.trim() || username, email.trim(), passwordHash, isFirstUser, isFirstUser ? null : verificationToken]
+                'INSERT INTO admin_users (username, name, email, password_hash, is_verified, verification_token, role) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [username.trim(), name?.trim() || username, email.trim(), passwordHash, isFirstUser, isFirstUser ? null : verificationToken, role || (isFirstUser ? 'admin' : 'support')]
             );
 
+            await logActivity(currentAdminId, 'REGISTER_ADMIN', { targetUser: username, role: role || 'support' });
+
             if (isFirstUser) {
-                res.status(201).json({
+                return res.status(201).json({
                     success: true,
-                    message: 'Admin account created and auto-verified! You can login now.',
+                    message: 'First admin account created and auto-verified! You can login now.',
                 });
-                return;
             }
 
             // Send verification email
@@ -84,112 +96,118 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // Admin login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', validate(adminLoginSchema), async (req: Request, res: Response) => {
     try {
+        console.log('[Login Attempt] Body:', { ...req.body, password: '***' });
         const { username, password } = req.body;
 
-        if (!username || !password) {
-            res.status(400).json({ error: 'Username and password required' });
-            return;
-        }
-
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query('SELECT * FROM admin_users WHERE username = $1', [username.trim()]);
             const user = result.rows[0];
 
             if (!user) {
-                console.log(`Login Failed: User ${username} not found.`);
-                res.status(401).json({ error: 'Invalid credentials' });
-                return;
+                return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             const isMatch = await bcrypt.compare(password, user.password_hash);
-            console.log(`Login attempt for ${username}: Password Match = ${isMatch}`);
-
             if (!isMatch) {
-                res.status(401).json({ error: 'Invalid credentials' });
-                return;
+                return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             if (!user.is_verified) {
-                console.log(`Login Failed: User ${username} is not verified.`);
-                res.status(403).json({ error: 'Please verify your email before logging in.' });
-                return;
+                return res.status(403).json({ error: 'Please verify your email before logging in.' });
             }
 
             const secret = process.env.JWT_SECRET || 'fallback-secret';
-            console.log(`Logging in ${username}. Using JWT_SECRET (5 chars): ${secret.substring(0, 5)}`);
-
             const accessToken = jwt.sign(
-                { id: user.id, username: user.username },
+                { id: user.id, username: user.username, role: user.role || 'admin' },
                 secret,
                 { expiresIn: '15m' }
             );
 
             const refreshToken = jwt.sign(
-                { id: user.id, username: user.username },
+                { id: user.id, username: user.username, role: user.role || 'admin' },
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
                 { expiresIn: '7d' }
             );
 
-            // Store refresh token in DB
             await client.query('UPDATE admin_users SET refresh_token = $1 WHERE id = $2', [refreshToken, user.id]);
+            await logActivity(user.id, 'LOGIN_BASIC', { device: req.headers['user-agent'] });
+
+            // Track session for device history
+            const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const userAgent = req.headers['user-agent'] || 'unknown';
+            const sessionId = crypto.createHash('md5').update(`${user.id}-${userAgent}-${ip}`).digest('hex');
+            await client.query(`
+                INSERT INTO sessions (id, admin_user_id, device_info, ip_address, last_used)
+                VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (id) DO UPDATE SET last_used = NOW()
+            `, [sessionId, user.id, userAgent, ip]);
 
             res.json({
                 success: true,
                 accessToken,
                 refreshToken,
-                admin: { username: user.username, name: user.name },
+                admin: { username: user.username, name: user.name, role: user.role },
             });
         } finally {
             await client.end();
         }
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+
+        console.error('Login error details:', error);
+        if (error instanceof Error) console.error(error.stack);
+        res.status(500).json({ error: 'Login failed', details: error instanceof Error ? error.message : String(error) });
     }
 });
 
-// Verify token
-router.get('/verify', authenticateToken, (req: AuthRequest, res: Response) => {
-    res.json({
-        success: true,
-        admin: { username: req.user?.username },
-    });
+// Verify Email
+router.get('/verify-email/:token', async (req: Request, res: Response) => {
+    try {
+        const { token } = req.params;
+        const { client } = await getDb();
+        try {
+            const result = await client.query('SELECT id FROM admin_users WHERE verification_token = $1', [token]);
+            if (result.rows.length === 0) {
+                return res.status(400).json({ error: 'Invalid or expired verification token' });
+            }
+
+            await client.query('UPDATE admin_users SET is_verified = true, verification_token = null WHERE id = $1', [result.rows[0].id]);
+            res.json({ success: true, message: 'Email verified successfully! You can now login.' });
+        } finally {
+            await client.end();
+        }
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({ error: 'Verification failed' });
+    }
 });
 
-// Refresh token
+// Refresh Token
 router.post('/refresh', async (req: Request, res: Response) => {
     try {
         const { refreshToken } = req.body;
-        if (!refreshToken) {
-            res.status(401).json({ error: 'Refresh token required' });
-            return;
-        }
+        if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
 
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query('SELECT * FROM admin_users WHERE refresh_token = $1', [refreshToken]);
             const user = result.rows[0];
 
-            if (!user) {
-                res.status(403).json({ error: 'Invalid refresh token' });
-                return;
-            }
+            if (!user) return res.status(403).json({ error: 'Invalid refresh token' });
 
             try {
                 jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret');
 
                 const accessToken = jwt.sign(
-                    { id: user.id, username: user.username },
+                    { id: user.id, username: user.username, role: user.role || 'admin' },
                     process.env.JWT_SECRET || 'fallback-secret',
                     { expiresIn: '15m' }
                 );
 
                 res.json({ success: true, accessToken });
             } catch (err) {
-                // Token is invalid/expired, clear it from DB
                 await client.query('UPDATE admin_users SET refresh_token = null WHERE id = $1', [user.id]);
                 res.status(403).json({ error: 'Expired or invalid refresh token' });
             }
@@ -203,17 +221,12 @@ router.post('/refresh', async (req: Request, res: Response) => {
 });
 
 // Logout
-router.post('/logout', async (req: Request, res: Response) => {
+router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) {
-            res.status(400).json({ error: 'Refresh token required for logout' });
-            return;
-        }
-
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
-            await client.query('UPDATE admin_users SET refresh_token = null WHERE refresh_token = $1', [refreshToken]);
+            await client.query('UPDATE admin_users SET refresh_token = null WHERE id = $1', [req.user?.id]);
+            await logActivity(req.user?.id || null, 'LOGOUT');
             res.json({ success: true, message: 'Logged out successfully' });
         } finally {
             await client.end();
@@ -221,86 +234,6 @@ router.post('/logout', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Logout error:', error);
         res.status(500).json({ error: 'Logout failed' });
-    }
-});
-
-// Verify email
-router.get('/verify-email/:token', async (req: Request, res: Response) => {
-    try {
-        const { token } = req.params;
-        const { db, client } = await getDb();
-        try {
-            const result = await client.query(
-                'UPDATE admin_users SET is_verified = true, verification_token = null WHERE verification_token = $1 RETURNING username',
-                [token]
-            );
-
-            if (result.rows.length === 0) {
-                res.status(400).json({ error: 'Invalid or expired verification token' });
-                return;
-            }
-
-            res.json({ success: true, message: `Email verified for ${result.rows[0].username}` });
-        } finally {
-            await client.end();
-        }
-    } catch (error) {
-        console.error('Verification error:', error);
-        res.status(500).json({ error: 'Verification failed' });
-    }
-});
-
-// Resend verification email
-router.post('/resend-verification', async (req: Request, res: Response) => {
-    try {
-        const { email } = req.body;
-
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
-
-        const { db, client } = await getDb();
-        try {
-            const result = await client.query(
-                'SELECT id, username, name, is_verified FROM admin_users WHERE email = $1',
-                [email.trim()]
-            );
-
-            if (result.rows.length === 0) {
-                res.status(404).json({ error: 'No admin account found with this email' });
-                return;
-            }
-
-            const user = result.rows[0];
-            if (user.is_verified) {
-                res.status(400).json({ error: 'Account is already verified' });
-                return;
-            }
-
-            const verificationToken = crypto.randomBytes(32).toString('hex');
-            await client.query(
-                'UPDATE admin_users SET verification_token = $1 WHERE id = $2',
-                [verificationToken, user.id]
-            );
-
-            const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-            const verifyUrl = `${clientUrl}/admin/verify-email/${verificationToken}`;
-
-            await sendEmail(
-                email.trim(),
-                'Verify Your Admin Account - ICE Jersey',
-                adminVerificationHtml(user.name || user.username, verifyUrl),
-                `Verify your email: ${verifyUrl}`
-            );
-
-            res.json({ success: true, message: 'Verification email resent successfully' });
-        } finally {
-            await client.end();
-        }
-    } catch (error) {
-        console.error('Resend verification error:', error);
-        res.status(500).json({ error: 'Failed to resend verification email' });
     }
 });
 

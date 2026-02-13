@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { adminLogin } from '../services/api';
+import { adminLogin, getPasskeyLoginOptions, verifyPasskeyLogin } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { startAuthentication } from '@simplewebauthn/browser';
 
 export default function AdminLoginPage() {
     const navigate = useNavigate();
@@ -24,6 +25,40 @@ export default function AdminLoginPage() {
             navigate('/admin/dashboard');
         } catch (err) {
             const msg = err.response?.data?.error || 'Login failed';
+            setError(msg);
+            showToast(msg, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasskeyLogin = async () => {
+        if (!username.trim()) {
+            setError('Please enter your username first');
+            showToast('Username required for Passkey login', 'error');
+            return;
+        }
+
+        setError('');
+        setLoading(true);
+
+        try {
+            const optionsRes = await getPasskeyLoginOptions(username.trim());
+            const options = optionsRes.data;
+
+            const asseResp = await startAuthentication({ optionsJSON: options });
+
+            const verificationRes = await verifyPasskeyLogin(username.trim(), asseResp);
+            const { accessToken, refreshToken } = verificationRes.data;
+
+            localStorage.setItem('adminAccessToken', accessToken);
+            localStorage.setItem('adminRefreshToken', refreshToken);
+
+            showToast('Passkey login successful!', 'success');
+            navigate('/admin/dashboard');
+        } catch (err) {
+            console.error('Passkey login failed:', err);
+            const msg = err.response?.data?.error || err.message || 'Passkey login failed';
             setError(msg);
             showToast(msg, 'error');
         } finally {
@@ -160,9 +195,36 @@ export default function AdminLoginPage() {
                             cursor: loading ? 'not-allowed' : 'pointer',
                             opacity: loading ? 0.7 : 1,
                             transition: 'all 0.3s ease',
+                            marginBottom: '12px'
                         }}
                     >
                         {loading ? 'Logging in...' : 'Sign In'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handlePasskeyLogin}
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '2px solid var(--primary)',
+                            background: 'transparent',
+                            color: 'var(--primary)',
+                            fontSize: '1rem',
+                            fontWeight: '700',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            opacity: loading ? 0.7 : 1,
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '10px'
+                        }}
+                    >
+                        <i className="fas fa-fingerprint"></i>
+                        {loading ? 'Authenticating...' : 'Sign in with Passkey'}
                     </button>
 
                     <div style={{ textAlign: 'center', marginTop: '24px' }}>

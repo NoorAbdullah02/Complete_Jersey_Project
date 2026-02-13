@@ -7,7 +7,10 @@ const API_BASE = import.meta.env.VITE_API_URL ||
 
 const api = axios.create({
   baseURL: API_BASE,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  },
 });
 
 // Attach JWT token to admin requests
@@ -64,7 +67,9 @@ api.interceptors.response.use(
 
       console.log('🔄 Calling refresh endpoint...');
       try {
-        const { data } = await axios.post(`${API_BASE}/admin/refresh`, { refreshToken });
+        const { data } = await axios.post(`${API_BASE}/admin/refresh`, { refreshToken }, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
         const newToken = data.accessToken;
         console.log('✅ Token refreshed successfully!');
         localStorage.setItem('adminAccessToken', newToken);
@@ -87,13 +92,19 @@ api.interceptors.response.use(
       }
     }
 
-    // Truly invalid token or explicit logout needed
+    // Handle 403 — only logout on auth-related 403, not CSRF failures
     if (error.response?.status === 403) {
-      console.error('🚫 403 Forbidden. Invalid token or session expired. Logging out.');
-      localStorage.removeItem('adminAccessToken');
-      localStorage.removeItem('adminRefreshToken');
-      if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
-        window.location.href = '/admin';
+      const errorMsg = error.response?.data?.error || '';
+      const isCsrf = errorMsg.includes('CSRF');
+      if (!isCsrf) {
+        console.error('🚫 403 Forbidden. Invalid token or session expired. Logging out.');
+        localStorage.removeItem('adminAccessToken');
+        localStorage.removeItem('adminRefreshToken');
+        if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
+          window.location.href = '/admin';
+        }
+      } else {
+        console.warn('🛡️ CSRF protection triggered — not logging out.');
       }
     }
     return Promise.reject(error);
@@ -132,6 +143,16 @@ export const verifyAdminEmail = (token) =>
 export const verifyToken = () => api.get('/admin/verify');
 export const adminLogout = (refreshToken) => api.post('/admin/logout', { refreshToken });
 export const refreshAdminToken = (refreshToken) => api.post('/admin/refresh', { refreshToken });
+
+// --- PASSKEY AUTH ---
+export const getPasskeyRegisterOptions = () => api.post('/auth/register-passkey/options');
+export const verifyPasskeyRegister = (body, name) => api.post('/auth/register-passkey/verify', { ...body, name });
+export const getPasskeyLoginOptions = (username) => api.post('/auth/login-passkey/options', { username });
+export const verifyPasskeyLogin = (username, body) => api.post('/auth/login-passkey/verify', { username, body });
+
+export const listPasskeys = () => api.get('/auth/passkeys');
+export const renamePasskey = (id, name) => api.patch(`/auth/passkeys/${id}`, { name });
+export const deletePasskey = (id) => api.delete(`/auth/passkeys/${id}`);
 
 // ====== ADMIN ORDERS ======
 export const getOrders = (params = {}) =>

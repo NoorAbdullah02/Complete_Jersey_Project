@@ -1,14 +1,16 @@
 import dotenv from 'dotenv';
 import path from 'path';
-// Load .env from the project root relative to this file
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import { initDb } from './db/index';
+import { csrfProtection } from './middleware/csrf';
 
 // Routes
 import orderRoutes from './routes/orders';
@@ -16,20 +18,28 @@ import adminRoutes from './routes/admin';
 import adminOrderRoutes from './routes/adminOrders';
 import expenseRoutes from './routes/expenses';
 import reportRoutes from './routes/reports';
+import authRoutes from './routes/auth';
+import inventoryRoutes from './routes/inventory';
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: process.env.ORIGIN || 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+    }
+});
+
 // Debug environment loading
 console.log('--- Environment Check ---');
 console.log('PORT:', process.env.PORT || '3000 (default)');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED (Safe)' : 'MISSING (Critical!)');
-console.log('JWT_REFRESH_SECRET:', process.env.JWT_REFRESH_SECRET ? 'LOADED (Safe)' : 'MISSING (Critical!)');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 console.log('------------------------');
-// Enable trust proxy for production environments (like Render/Heroku)
-// This is required for express-rate-limit to correctly identify user IPs
+
+// Enable trust proxy for production
 if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
     app.set('trust proxy', true);
-    console.log('Express trust proxy enabled (set to true)');
 }
 const PORT = process.env.PORT || 3000;
 
@@ -42,18 +52,12 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "http://localhost:*"],
+            connectSrc: ["'self'", "http://localhost:*", "ws://localhost:*"],
         },
     },
 }));
 
 // Rate limiters
-const orderLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: 'Too many order submissions, please try again later',
-});
-
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -61,59 +65,72 @@ const apiLimiter = rateLimit({
 
 // Basic middleware
 app.use(cors());
+app.use((req, res, next) => {
+    console.log(`[REQ] ${req.method} ${req.url}`);
+    next();
+});
 app.use(express.json({ limit: '10mb' }));
+app.use(csrfProtection); // Apply CSRF protection
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// If a built client exists, serve its static files (ensures assets like /assets/* resolve)
-const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+// SPA fallback
+const clientDist = path.resolve(process.cwd(), '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {
     app.use(express.static(clientDist));
 }
+
+// WebSocket Logic
+io.on('connection', (socket) => {
+    console.log(`📡 New WebSocket connection: ${socket.id}`);
+
+    socket.on('join-order-tracking', (orderId) => {
+        socket.join(`order-${orderId}`);
+        console.log(`📦 User joined tracking for order: ${orderId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`🔌 WebSocket disconnected: ${socket.id}`);
+    });
+});
+
+// Global export of IO for use in routes
+app.set('io', io);
 
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        version: '2.0.0',
+        version: '3.0.0-PROD',
     });
 });
 
-// Root - quick info page so visiting :3000 doesn't return the API 404
-app.get('/', (req, res) => {
-    res.type('html').send(`
-                <html>
-                    <head><title>Jersey Project</title></head>
-                    <body style="font-family: Arial, sans-serif; text-align:center; padding:40px;">
-                        <h1>Jersey Project API</h1>
-                        <p>API is available under <code>/api</code>. Health: <a href="/api/health">/api/health</a></p>
-                        <p>Frontend (dev): run the client dev server (Vite) on port 5173.</p>
-                    </body>
-                </html>
-        `);
-});
-
 // Mount routes
+app.use('/api/auth', authRoutes);
 app.use('/api/orders', apiLimiter, orderRoutes);
 app.use('/api/admin', apiLimiter, adminRoutes);
 app.use('/api/admin', adminOrderRoutes);
 app.use('/api/admin/expenses', expenseRoutes);
 app.use('/api/admin/reports', reportRoutes);
+app.use('/api/admin/inventory', inventoryRoutes);
 
 // SPA fallback / 404 handler
 app.use('*', (req, res) => {
-    const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+    const clientDist = path.resolve(process.cwd(), '..', 'client', 'dist');
     if (req.method === 'GET' && !req.path.startsWith('/api') && fs.existsSync(clientDist)) {
         return res.sendFile(path.join(clientDist, 'index.html'));
     }
     return res.status(404).json({ error: 'Route not found' });
 });
 
-
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Global error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error instanceof Error) {
+        console.error('Stack:', error.stack);
+    }
+    const statusCode = error.status || error.statusCode || 500;
+    res.status(statusCode).json({ error: statusCode === 500 ? 'Internal server error' : error.message, details: error.message });
 });
 
 // Start server
@@ -122,26 +139,17 @@ const startServer = async () => {
         if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is required');
         }
-
         await initDb();
-
-        app.listen(PORT, () => {
-            console.log(`\n🚀 Jersey Order Server Started Successfully!`);
-            console.log(`📍 Server: http://localhost:${PORT}`);
-            console.log(`🔒 Security: Helmet + Rate Limiting enabled`);
-            console.log(`📧 Email: ${process.env.BREVO_API_KEY ? 'Configured' : 'Not configured'}`);
-            console.log(`📊 Reports: Excel generation ready`);
-            console.log(`🗃️  Database: Connected via Drizzle ORM\n`);
+        httpServer.listen(PORT, () => {
+            console.log(`\n🚀 ICE JERSEY PRODUCTION SERVER STARTED!`);
+            console.log(`📍 URL: http://localhost:${PORT}`);
+            console.log(`🔒 Security: Helmet + CSRF + Rate Limiting enabled`);
+            console.log(`📡 Real-time: Socket.io backend active\n`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);
         process.exit(1);
     }
 };
-
-// In production, build the client into `client/dist` and the SPA fallback above
-// will serve the static files. Ensure you build the client with `npm run build`
-// in the `client` folder before starting the server in production.
-
 
 startServer();

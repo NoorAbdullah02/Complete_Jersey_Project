@@ -1,6 +1,10 @@
 import { Router, Response } from 'express';
 import { getDb } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createExpenseSchema } from '../schemas';
+import { authorize } from '../middleware/rbac';
+import { logActivity } from '../utils/logger';
 
 const router = Router();
 router.use(authenticateToken);
@@ -8,7 +12,7 @@ router.use(authenticateToken);
 // Get all expenses
 router.get('/', async (req: AuthRequest, res: Response) => {
     try {
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query('SELECT * FROM expenses ORDER BY created_at DESC');
             res.json({ success: true, expenses: result.rows });
@@ -22,21 +26,18 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // Add expense
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', authorize(['admin', 'manager']), validate(createExpenseSchema), async (req: AuthRequest, res: Response) => {
     try {
         const { description, amount, category, date } = req.body;
 
-        if (!description || !amount) {
-            res.status(400).json({ error: 'Description and amount are required' });
-            return;
-        }
-
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query(
                 'INSERT INTO expenses (description, amount, category, date, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [description.trim(), parseFloat(amount), category || 'general', date || null, req.user?.username || null]
+                [description.trim(), amount, category || 'general', date || null, req.user?.username || null]
             );
+
+            await logActivity(req.user?.id || null, 'CREATE_EXPENSE', { id: result.rows[0].id, amount });
 
             res.status(201).json({ success: true, expense: result.rows[0] });
         } finally {
@@ -49,10 +50,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // Update expense
-router.patch('/:id', async (req: AuthRequest, res: Response) => {
+router.patch('/:id', authorize(['admin', 'manager']), async (req: AuthRequest, res: Response) => {
     try {
         const { description, amount, category, date } = req.body;
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query(
                 `UPDATE expenses 
@@ -65,9 +66,10 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
             );
 
             if (result.rows.length === 0) {
-                res.status(404).json({ error: 'Expense not found' });
-                return;
+                return res.status(404).json({ error: 'Expense not found' });
             }
+
+            await logActivity(req.user?.id || null, 'UPDATE_EXPENSE', { id: req.params.id });
 
             res.json({ success: true, expense: result.rows[0] });
         } finally {
@@ -80,15 +82,15 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // Delete expense
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authorize(['admin']), async (req: AuthRequest, res: Response) => {
     try {
-        const { db, client } = await getDb();
+        const { client } = await getDb();
         try {
             const result = await client.query('DELETE FROM expenses WHERE id = $1 RETURNING *', [req.params.id]);
             if (result.rows.length === 0) {
-                res.status(404).json({ error: 'Expense not found' });
-                return;
+                return res.status(404).json({ error: 'Expense not found' });
             }
+            await logActivity(req.user?.id || null, 'DELETE_EXPENSE', { id: req.params.id });
             res.json({ success: true, message: 'Expense deleted' });
         } finally {
             await client.end();

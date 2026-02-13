@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { getDb } from '../db/index';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { sendEmail, paymentConfirmationHtml } from '../services/email';
+import { cacheGet, cacheSet, cacheDelete } from '../utils/cache';
 
 const router = Router();
 
@@ -83,7 +84,13 @@ router.get('/orders', async (req: AuthRequest, res: Response) => {
 // Get stats
 router.get('/stats', async (req: AuthRequest, res: Response) => {
     try {
-        const { db, client } = await getDb();
+        const cacheKey = 'admin_stats';
+        const cached = await cacheGet<{ totalOrders: number; ordersByStatus: any; totalRevenue: number }>(cacheKey);
+        if (cached) {
+            return res.json({ success: true, stats: cached, source: 'cache' });
+        }
+
+        const { client } = await getDb();
         try {
             const [totalResult, pendingResult, doneResult, revenueResult] = await Promise.all([
                 client.query('SELECT COUNT(*) FROM orders'),
@@ -92,17 +99,18 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
                 client.query("SELECT SUM(final_price) FROM orders WHERE status = 'done'"),
             ]);
 
-            res.json({
-                success: true,
-                stats: {
-                    totalOrders: parseInt(totalResult.rows[0].count),
-                    ordersByStatus: {
-                        pending: parseInt(pendingResult.rows[0].count),
-                        done: parseInt(doneResult.rows[0].count),
-                    },
-                    totalRevenue: parseFloat(revenueResult.rows[0].sum || 0),
+            const stats = {
+                totalOrders: parseInt(totalResult.rows[0].count),
+                ordersByStatus: {
+                    pending: parseInt(pendingResult.rows[0].count),
+                    done: parseInt(doneResult.rows[0].count),
                 },
-            });
+                totalRevenue: parseFloat(revenueResult.rows[0].sum || 0),
+            };
+
+            await cacheSet(cacheKey, stats, 300); // Cache for 5 mins
+
+            res.json({ success: true, stats });
         } finally {
             await client.end();
         }
@@ -151,6 +159,20 @@ router.patch('/orders/:id/status', async (req: AuthRequest, res: Response) => {
             }
 
             res.json({ success: true, message: 'Order status updated successfully', newStatus: status });
+
+            // Invalidate stats cache
+            await cacheDelete('admin_stats');
+
+            // 📍 Emit real-time update
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`order-${req.params.id}`).emit('order-status-updated', {
+                    orderId: req.params.id,
+                    status: status,
+                    updatedAt: new Date().toISOString()
+                });
+                console.log(`📣 Real-time update emitted for order-${req.params.id}`);
+            }
         } finally {
             await client.end();
         }
