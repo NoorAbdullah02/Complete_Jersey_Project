@@ -19,12 +19,30 @@ export default function SuccessPage() {
         }
     }, [location, navigate]);
 
+    // Always scroll to top when this page mounts or when orderData changes
+    useEffect(() => {
+        try {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        } catch (e) {
+            // fallback for older browsers
+            window.scrollTo(0, 0);
+        }
+    }, [orderData]);
+
     // Normalize items to an array to avoid runtime errors if items is unexpectedly an object
     const items = Array.isArray(orderData?.items)
         ? orderData.items
         : orderData?.items
             ? Object.values(orderData.items)
             : [];
+
+    // Defensive: if location.state contains the data under a different key (like `order`), prefer that
+    useEffect(() => {
+        if (!orderData && location.state) {
+            const alt = location.state.order || location.state.data || null;
+            if (alt) setOrderData({ ...location.state, ...alt });
+        }
+    }, [location.state, orderData]);
 
     if (!orderData && !location.state?.orderId) {
         return (
