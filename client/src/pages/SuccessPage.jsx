@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Particles from '../components/Particles';
 import Footer from '../components/Footer';
@@ -8,6 +8,8 @@ export default function SuccessPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [orderData, setOrderData] = useState(null);
+    const containerRef = useRef(null);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
     useEffect(() => {
         if (location.state?.orderId) {
@@ -21,12 +23,18 @@ export default function SuccessPage() {
 
     // Always scroll to top when this page mounts or when orderData changes
     useEffect(() => {
-        try {
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        } catch (e) {
-            // fallback for older browsers
-            window.scrollTo(0, 0);
-        }
+        const t = setTimeout(() => {
+            try {
+                if (containerRef.current && containerRef.current.scrollIntoView) {
+                    containerRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+                } else {
+                    window.scrollTo(0, 0);
+                }
+            } catch (e) {
+                window.scrollTo(0, 0);
+            }
+        }, 50);
+        return () => clearTimeout(t);
     }, [orderData]);
 
     // Normalize items to an array to avoid runtime errors if items is unexpectedly an object
@@ -54,7 +62,7 @@ export default function SuccessPage() {
 
     return (
         <ErrorBoundary>
-            <Particles />
+            {!isMobile && <Particles />}
             <div style={{
                 minHeight: '100vh',
                 display: 'flex',
@@ -68,14 +76,14 @@ export default function SuccessPage() {
                 position: 'relative',
                 zIndex: 1
             }}>
-                <div style={{
+                <div ref={containerRef} style={{
                     background: 'rgba(255, 255, 255, 0.05)',
                     backdropFilter: 'blur(10px)',
-                    padding: '40px',
+                    padding: '32px',
                     borderRadius: '20px',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     maxWidth: '600px',
-                    width: '100%',
+                    width: 'min(92%, 600px)',
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }} data-aos="zoom-in">
 
