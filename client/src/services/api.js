@@ -54,6 +54,7 @@ api.interceptors.response.use(
 
       const refreshToken = localStorage.getItem('adminRefreshToken');
       if (!refreshToken) {
+        isRefreshing = false;
         localStorage.removeItem('adminAccessToken');
         return Promise.reject(error);
       }
@@ -64,13 +65,13 @@ api.interceptors.response.use(
         localStorage.setItem('adminAccessToken', newToken);
         api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         localStorage.removeItem('adminAccessToken');
         localStorage.removeItem('adminRefreshToken');
-        // Redirect to login if on admin page
-        if (window.location.pathname.startsWith('/admin')) {
+        if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
           window.location.href = '/admin';
         }
         return Promise.reject(refreshError);
@@ -79,9 +80,13 @@ api.interceptors.response.use(
       }
     }
 
+    // Truly invalid token or explicit logout needed
     if (error.response?.status === 403) {
       localStorage.removeItem('adminAccessToken');
       localStorage.removeItem('adminRefreshToken');
+      if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
+        window.location.href = '/admin';
+      }
     }
     return Promise.reject(error);
   }
