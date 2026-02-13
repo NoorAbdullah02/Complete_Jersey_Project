@@ -6,6 +6,9 @@ import {
     verifyToken, getOrders, getStats, updateOrderStatus, updateOrder, deleteOrder,
     getExpenses, addExpense, updateExpense, deleteExpense, downloadReport, notifyCollection, bulkUpdateOrders, adminLogout
 } from '../services/api';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
+} from 'recharts';
 
 // ========== ADMIN DASHBOARD CSS (inline styles as objects) ==========
 const styles = {
@@ -222,6 +225,28 @@ export default function AdminDashboardPage() {
         notes: '',
         items: []
     });
+
+    const chartData = React.useMemo(() => {
+        const dailyData = {};
+
+        // Process Revenue (Completed Orders Only)
+        orders.forEach(o => {
+            if (o.status !== 'done') return;
+            const date = new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (!dailyData[date]) dailyData[date] = { date, revenue: 0, expense: 0 };
+            dailyData[date].revenue += parseFloat(o.final_price || 0);
+        });
+
+        // Process Expenses
+        expenses.forEach(e => {
+            const date = new Date(e.date || e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (!dailyData[date]) dailyData[date] = { date, revenue: 0, expense: 0 };
+            dailyData[date].expense += parseFloat(e.amount || 0);
+        });
+
+        // Convert to sorted array
+        return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [orders, expenses]);
 
     useEffect(() => {
         verifyToken()
@@ -543,6 +568,9 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
+                    <button style={styles.btn('#6366f1')} onClick={() => navigate('/admin/register')}>
+                        <i className="fas fa-user-plus"></i> Register Admin
+                    </button>
                     {/* Mass Email Button */}
                     <button style={styles.btn(notifying ? '#9ca3af' : '#8b5cf6')} onClick={handleNotifyCollection} disabled={notifying}>
                         <i className={`fas ${notifying ? 'fa-spinner fa-spin' : 'fa-bullhorn'}`}></i> {notifying ? 'Sending...' : 'Notify Collection'}
@@ -600,6 +628,74 @@ export default function AdminDashboardPage() {
                                 <i className="fas fa-balance-scale" style={styles.statIcon('#8b5cf6')}></i>
                                 <div style={{ ...styles.statNumber, color: '#8b5cf6' }}>৳{((stats.totalRevenue || 0) - totalExpenses).toLocaleString()}</div>
                                 <div style={styles.statLabel}>Net Balance</div>
+                            </div>
+                        </div>
+
+                        {/* Financial Chart */}
+                        <div style={{ ...styles.card, marginBottom: '24px' }}>
+                            <h3 style={{ marginBottom: '24px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <i className="fas fa-chart-line" style={{ color: '#6366f1' }}></i> Financial Trends
+                            </h3>
+                            <div style={{ height: '350px', width: '100%' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                                            tickFormatter={(value) => `৳${value}`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                background: 'rgba(15,23,42,0.9)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: '12px',
+                                                backdropFilter: 'blur(10px)',
+                                                fontSize: '14px',
+                                                color: '#fff'
+                                            }}
+                                            itemStyle={{ padding: '2px 0' }}
+                                        />
+                                        <Legend verticalAlign="top" height={36} />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            name="Revenue"
+                                            stroke="#6366f1"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorRev)"
+                                            animationDuration={1500}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="expense"
+                                            name="Expenses"
+                                            stroke="#ef4444"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorExp)"
+                                            animationDuration={1500}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
