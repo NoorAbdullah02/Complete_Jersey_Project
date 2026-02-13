@@ -21,8 +21,12 @@ const outDir = path.resolve(__dirname, '..', 'drizzle');
 
 async function main() {
   try {
-    // 1) Generate migration SQL files
-    run('npx drizzle-kit generate');
+    // 1) Generate migration SQL files during development/build time only.
+    // In production the drizzle dev CLI may not be available (devDependency),
+    // so skip generation and rely on pre-generated SQL files included in the build.
+    if (process.env.NODE_ENV !== 'production') {
+      run('npx drizzle-kit generate');
+    }
 
     // 2) Sanitize generated SQL files: remove DROP/TRANSCATE lines and script markers
     const sqlFiles: string[] = [];
