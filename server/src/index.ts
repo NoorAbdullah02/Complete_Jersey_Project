@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config();
+import dotenv from 'dotenv';
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 import express from 'express';
 import { createServer } from 'http';

@@ -83,18 +83,26 @@ export default function OrderPage() {
     }, [navigate]);
 
     const handleFormSubmit = useCallback((formData) => {
+        // Map fields to match server schema
+        const mappedItems = formData.items.map(item => ({
+            ...item,
+            itemPrice: item.price // Server expects itemPrice
+        }));
+
+        const submissionData = {
+            ...formData,
+            items: mappedItems,
+            transactionId: formData.txnId || '',
+            finalPrice: formData.confirmedTotal || formData.totalPrice
+        };
+
         if (formData.skipModal) {
             console.log('Direct submission from PaymentSystem (skipModal).');
-            const finalPayload = {
-                ...formData,
-                transactionId: formData.txnId || '',
-                finalPrice: formData.confirmedTotal || formData.totalPrice
-            };
-            handleFinalConfirm(finalPayload);
+            handleFinalConfirm(submissionData);
             return;
         }
 
-        setPendingOrderData(formData);
+        setPendingOrderData(submissionData);
         setShowPaymentModal(true);
     }, [handleFinalConfirm]);
 

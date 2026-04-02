@@ -33,6 +33,7 @@ const validators = {
     size: (v) => (!v ? 'Please select a size' : null),
     collarType: (v) => (!v ? 'Please select collar type' : null),
     sleeveType: (v) => (!v ? 'Please select sleeve type' : null),
+    batch: (v) => (!v || !v.trim() ? 'Please select your batch' : null),
 };
 
 function debounce(fn, ms) {
@@ -250,7 +251,7 @@ export default function OrderForm({ onSubmit, onPriceChange }) {
         return s === 'error' ? 'error' : s === 'success' ? 'success' : '';
     };
 
-    const batches = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th', '18th', 'Others'];
+    const batches = ['13th', '14th', '15th', '16th', '17th', '18th', '19th', 'Others'];
 
     // --- High-End Glass Styles ---
 

@@ -6,7 +6,8 @@ export default function HeroHeader() {
         <section className="hero-header" data-aos="fade-down">
             <div className="hero-content">
                 <h1 className="hero-title" data-aos="fade-up" data-aos-delay="200">
-                    <i className="fas fa-tshirt"></i> ICE JERSEY
+                    <img src="/favicon.png" alt="ICE Logo" style={{ width: '60px', height: '60px', marginRight: '15px', verticalAlign: 'middle', filter: 'drop-shadow(0 0 10px rgba(0, 242, 254, 0.5))' }} />
+                    ICE JERSEY
                 </h1>
                 <p className="hero-subtitle" data-aos="fade-up" data-aos-delay="400">
                     Department of ICE • Premium Collection 2026

@@ -24,7 +24,10 @@ export async function sendEmail(
   }
 
   try {
-    console.log(`Email Service: Attempting to send email to ${to} with subject: ${subject}`);
+    console.log(`[EMAIL_SERVICE] Sending to ${to}...`);
+    console.log(`[EMAIL_SERVICE] Using API Key (length): ${apiKey.length}`);
+    console.log(`[EMAIL_SERVICE] Sender: ${fromName} <${fromEmail}>`);
+    
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {

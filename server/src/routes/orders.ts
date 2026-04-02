@@ -188,28 +188,8 @@ router.post('/', validate(createOrderSchema), async (req: Request, res: Response
 
             const order = orderResult.rows[0];
 
-            // 3. Insert Items and Deduct Stock
+            // 3. Insert Items (Unlimited Ordering - No Stock Check)
             for (const item of items) {
-                // Deduct from inventory
-                const inventoryName = `Jersey ${item.size.toUpperCase()}`;
-                const stockUpdate = await client.query(
-                    'UPDATE inventory SET quantity = quantity - 1 WHERE item_name = $1 AND quantity > 0 RETURNING id',
-                    [inventoryName]
-                );
-
-                if (stockUpdate.rows.length === 0) {
-                    await client.query('ROLLBACK');
-                    return res.status(400).json({ error: `Item ${inventoryName} is out of stock` });
-                }
-
-                const invId = stockUpdate.rows[0].id;
-
-                // Log stock change
-                await client.query(
-                    'INSERT INTO stock_logs (inventory_id, change, reason) VALUES ($1, $2, $3)',
-                    [invId, -1, `Order ICE-${order.id}`]
-                );
-
                 await client.query(`
                     INSERT INTO order_items (order_id, jersey_number, jersey_name, batch, size, collar_type, sleeve_type, item_price)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

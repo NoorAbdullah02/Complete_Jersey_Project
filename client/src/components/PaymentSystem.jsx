@@ -70,9 +70,9 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
         nagad: { name: "Nagad", number: "01748269351", color: "#f79c1e" },
     };
 
-    // --- Premium Liquid Gold Theme Styles ---
-    const primaryGold = '#f0a500';
-    const emeraldTeal = '#00d4aa';
+    // --- Premium ICE Theme Styles ---
+    const primaryICE = '#00f2fe';
+    const emeraldTeal = '#4facfe';
     
     // Smooth Glass Theme for the panels
     const glassPanelStyle = {
@@ -93,7 +93,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
         cursor: 'pointer',
         transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         border: isActive ? `1px solid rgba(${activeColor === emeraldTeal ? '0, 212, 170' : '240, 165, 0'}, 0.5)` : '1px solid rgba(255, 255, 255, 0.06)',
-        boxShadow: isActive ? `0 10px 30px rgba(${activeColor === emeraldTeal ? '0, 212, 170' : '240, 165, 0'}, 0.15)` : 'none',
+        boxShadow: isActive ? `0 10px 30px rgba(${activeColor === emeraldTeal ? '79, 172, 254' : '0, 242, 254'}, 0.15)` : 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -116,9 +116,9 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                 <div className="d-flex align-items-center gap-3">
                     <div style={{
                         width: '45px', height: '45px', borderRadius: '14px',
-                        background: 'linear-gradient(135deg, #f0a500, #ff6b35)',
+                        background: 'linear-gradient(135deg, #00f2fe, #4facfe)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#0a0e1a', fontSize: '1.2rem', boxShadow: '0 5px 15px rgba(240, 165, 0, 0.3)'
+                        color: '#0a0e1a', fontSize: '1.2rem', boxShadow: '0 5px 15px rgba(0, 242, 254, 0.3)'
                     }}>
                         <i className="fas fa-gem"></i>
                     </div>
@@ -126,7 +126,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                         <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: '800', color: '#fff', fontSize: '1.3rem', margin: '0 0 -2px 0', letterSpacing: '1px' }}>
                             SECURE PAY
                         </h2>
-                        <span style={{ color: primaryGold, fontSize: '0.7rem', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                        <span style={{ color: primaryICE, fontSize: '0.7rem', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>
                             Gateway Portal
                         </span>
                     </div>
@@ -149,7 +149,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                 {/* Decorative Glowing Shape */}
                 <div style={{ 
                     position: 'absolute', top: '-40%', right: '-10%', width: '200px', height: '200px', 
-                    background: 'radial-gradient(circle, rgba(240,165,0,0.15) 0%, rgba(240,165,0,0) 70%)', 
+                    background: 'radial-gradient(circle, rgba(0,242,254,0.15) 0%, rgba(0,242,254,0) 70%)', 
                     borderRadius: '50%', zIndex: 0
                 }}></div>
                 
@@ -157,8 +157,8 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                     <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '15px' }}>
                         TOTAL PAYABLE
                     </label>
-                    <div style={{ fontSize: '3.5rem', fontFamily: "'Orbitron', monospace", fontWeight: '800', color: primaryGold, marginBottom: '5px', letterSpacing: '1px', textShadow: '0 0 30px rgba(240, 165, 0, 0.4)' }}>
-                        ৳{formatCurrency(amount)}
+                    <div style={{ fontSize: '3.5rem', fontFamily: "'Orbitron', monospace", fontWeight: '800', color: primaryICE, marginBottom: '5px', letterSpacing: '1px', textShadow: '0 0 30px rgba(0, 242, 254, 0.4)' }}>
+                        {formatCurrency(amount)} TK
                     </div>
                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>
                         Select your preferred gateway method
@@ -174,14 +174,14 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
             {/* Method Cards */}
             <div className="ps-entrance row g-3 mb-4">
                 <div className="col-sm-6">
-                    <div onClick={handleOnlinePayment} style={tileStyle(method === 'online', primaryGold)}
+                    <div onClick={handleOnlinePayment} style={tileStyle(method === 'online', primaryICE)}
                          onMouseOver={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                          onMouseOut={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
                         <div style={{
                             width: '50px', height: '50px', borderRadius: '14px',
-                            background: 'rgba(240, 165, 0, 0.1)', color: primaryGold,
+                            background: 'rgba(0, 242, 254, 0.1)', color: primaryICE,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(240,165,0,0.2)'
+                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,242,254,0.2)'
                         }}>
                             <i className="fas fa-globe"></i>
                         </div>
@@ -210,22 +210,27 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
             {/* Receipt Summary */}
             <div className="ps-entrance" style={{ ...glassPanelStyle, padding: '30px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>Config Base Total</span>
-                    <span style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>৳{formatCurrency(amount)}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>Jersey Price</span>
+                    <span style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>{formatCurrency(amount)} TK</span>
                 </div>
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>Service Fees</span>
-                    <span style={{ color: extraCharge > 0 ? primaryGold : '#34d399', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>
-                        + ৳{formatCurrency(extraCharge)}
-                    </span>
+                
+                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>
+                            Gateway Processing Fee
+                        </span>
+                        <span style={{ color: extraCharge > 0 ? primaryICE : '#34d399', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>
+                            + {formatCurrency(extraCharge)} TK
+                        </span>
+                    </div>
                 </div>
                 
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '20px 0' }}></div>
                 
                 <div className="d-flex justify-content-between align-items-center">
-                    <span style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '700', letterSpacing: '1px' }}>Final Settlement</span>
-                    <span style={{ color: '#fff', fontWeight: '800', fontSize: '1.8rem', fontFamily: "'Orbitron', monospace", textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
-                        ৳{formatCurrency(total)}
+                    <span style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '700', letterSpacing: '1px' }}>Total Price</span>
+                    <span style={{ color: '#fff', fontWeight: '800', fontSize: '1.8rem', fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
+                        {formatCurrency(total)} TK
                     </span>
                 </div>
             </div>
@@ -241,9 +246,13 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                     </div>
                     <div>
                         <h5 style={{ color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontWeight: '700', margin: '0 0 8px 0', fontSize: '1.1rem' }}>Cash Payment Selected</h5>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '0 0 15px 0', lineHeight: 1.5 }}>
                             You will hand over the cash directly to your respective Class Representative (CR) after placing the order. Verification will be done offline.
                         </p>
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px 18px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '15px' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>Total Amount</span>
+                            <span style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', fontFamily: "'Orbitron', sans-serif" }}>{formatCurrency(total)} TK</span>
+                        </div>
                     </div>
                 </div>
             )}
@@ -259,7 +268,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                         <div className="d-flex justify-content-between align-items-start mb-4">
                             <div>
                                 <h4 style={{ color: '#fff', margin: 0, fontFamily: "'Orbitron', sans-serif", fontWeight: '700', letterSpacing: '1px' }}>SELECT GATEWAY</h4>
-                                <p style={{ color: primaryGold, fontSize: '0.85rem', fontWeight: '600', margin: '5px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Encrypted Channel</p>
+                                <p style={{ color: primaryICE, fontSize: '0.85rem', fontWeight: '600', margin: '5px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Encrypted Channel</p>
                             </div>
                             <button onClick={closePortal} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.4rem', padding: '0', transition: 'color 0.2s' }}
                                     onMouseOver={e=>e.currentTarget.style.color='#fff'} onMouseOut={e=>e.currentTarget.style.color='rgba(255,255,255,0.4)'}>
@@ -314,9 +323,24 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                                         outline: 'none', fontFamily: "'Space Grotesk', monospace", fontSize: '1.1rem',
                                         transition: 'all 0.3s'
                                     }}
-                                    onFocus={(e) => { e.target.style.borderColor = primaryGold; e.target.style.boxShadow = `0 0 15px rgba(240,165,0,0.2)` }}
-                                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none' }}
+                                    onFocus={(e) => { e.target.style.borderColor = primaryICE; e.target.style.boxShadow = `0 0 15px rgba(0, 242, 254, 0.2)` }}
+                                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.target.style.boxShadow = 'none' }}
                                 />
+
+                                <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div className="d-flex justify-content-between mb-2">
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>Base Price</span>
+                                        <span style={{ color: '#fff', fontWeight: '600' }}>{formatCurrency(amount)} TK</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between mb-3">
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>Gateway Fee</span>
+                                        <span style={{ color: primaryICE, fontWeight: '600' }}>+ {formatCurrency(extraCharge)} TK</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center" style={{ background: 'rgba(0, 242, 254, 0.05)', padding: '12px 15px', borderRadius: '10px' }}>
+                                        <span style={{ color: '#fff', fontWeight: '700', fontSize: '0.9rem' }}>TOTAL TO PAY</span>
+                                        <span style={{ color: primaryICE, fontWeight: '800', fontSize: '1.2rem', fontFamily: "'Orbitron', sans-serif" }}>{formatCurrency(total)} TK</span>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -337,12 +361,12 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                                 disabled={!provider || !txnId.trim()}
                                 style={{
                                     flex: 2, padding: '16px', borderRadius: '50px',
-                                    background: provider && txnId.trim() ? primaryGold : 'rgba(255,255,255,0.05)',
+                                    background: provider && txnId.trim() ? primaryICE : 'rgba(255,255,255,0.05)',
                                     color: provider && txnId.trim() ? '#0a0e1a' : 'rgba(255,255,255,0.3)',
                                     border: 'none', fontWeight: '800', fontFamily: "'Orbitron', sans-serif", letterSpacing: '1px',
                                     cursor: provider && txnId.trim() ? 'pointer' : 'not-allowed',
                                     transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                    boxShadow: provider && txnId.trim() ? '0 10px 20px rgba(240,165,0,0.3)' : 'none'
+                                    boxShadow: provider && txnId.trim() ? '0 10px 20px rgba(0, 242, 254, 0.3)' : 'none'
                                 }}
                                 onMouseOver={e => { if(provider && txnId.trim()) e.currentTarget.style.transform='scale(1.03)' }}
                                 onMouseOut={e => { if(provider && txnId.trim()) e.currentTarget.style.transform='scale(1)' }}
