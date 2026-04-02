@@ -9,7 +9,7 @@ export default function HeroHeader() {
                     <i className="fas fa-tshirt"></i> ICE JERSEY
                 </h1>
                 <p className="hero-subtitle" data-aos="fade-up" data-aos-delay="400">
-                    Department of BAUET • Premium Collection 2025
+                    Department of ICE • Premium Collection 2026
                 </p>
                 <div className="hero-badges" data-aos="fade-up" data-aos-delay="600">
                     <div className="hero-badge">

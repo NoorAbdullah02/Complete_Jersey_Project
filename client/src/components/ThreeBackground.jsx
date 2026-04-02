@@ -47,7 +47,7 @@ function Stars(props) {
             <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
                 <PointMaterial
                     transparent
-                    color="#6366f1"
+                    color="#f0a500"
                     size={0.003}
                     sizeAttenuation={true}
                     depthWrite={false}

@@ -28,7 +28,7 @@ export const ConfirmProvider = ({ children }) => {
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(2,6,23,0.6)' }} />
           <div style={{ position: 'relative', width: 'min(640px, 92%)', borderRadius: 14, padding: 22, background: '#0b1220', color: '#e6eef8', boxShadow: '0 10px 40px rgba(2,6,23,0.8)', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 12, background: 'linear-gradient(135deg,#6366f1,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: 'linear-gradient(135deg,#f0a500,#ff6b35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
                 ✓
               </div>
               <div>

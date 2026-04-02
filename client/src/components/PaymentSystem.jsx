@@ -16,7 +16,6 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
     const containerRef = useRef(null);
     const modalRef = useRef(null);
 
-    // Sync local amount with prop
     useEffect(() => {
         setAmount(initialAmount);
     }, [initialAmount]);
@@ -27,7 +26,6 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
         setTotal(Number(amount) + charge);
     }, [amount, method]);
 
-    // GSAP Entrance
     useLayoutEffect(() => {
         const ctx = gsap.context(() => {
             gsap.fromTo('.ps-entrance',
@@ -38,7 +36,6 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
         return () => ctx.revert();
     }, []);
 
-    // GSAP Modal Animation
     useLayoutEffect(() => {
         if (showModal && modalRef.current) {
             gsap.fromTo(modalRef.current,
@@ -69,155 +66,203 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
     };
 
     const CARRIERS = {
-        bkash: { name: "bKash", number: "01748269350", color: "#e2136e", accent: "pink" },
-        nagad: { name: "Nagad", number: "01748269351", color: "#f79c1e", accent: "orange" },
+        bkash: { name: "bKash", number: "01748269350", color: "#e2136e" },
+        nagad: { name: "Nagad", number: "01748269351", color: "#f79c1e" },
     };
 
-    // --- Glass Styles ---
-    const glassStyle = {
-        background: 'rgba(255, 255, 255, 0.03)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+    // --- Premium Liquid Gold Theme Styles ---
+    const primaryGold = '#f0a500';
+    const emeraldTeal = '#00d4aa';
+    
+    // Smooth Glass Theme for the panels
+    const glassPanelStyle = {
+        background: 'rgba(255, 255, 255, 0.02)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
         borderRadius: '24px',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
     };
-
-    const tileStyle = (isActive, color = '#6366f1') => ({
-        background: isActive ? `rgba(${color === '#e2136e' ? '226, 19, 110' : color === '#f79c1e' ? '247, 156, 30' : '99, 102, 241'}, 0.2)` : 'rgba(255, 255, 255, 0.05)',
-        border: isActive ? `1px solid ${color}` : '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '16px',
-        padding: '20px',
+    
+    // Style for the selection cards
+    const tileStyle = (isActive, activeColor = primaryGold) => ({
+        background: isActive ? `rgba(${activeColor === emeraldTeal ? '0, 212, 170' : '240, 165, 0'}, 0.08)` : 'rgba(255, 255, 255, 0.02)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '20px',
+        padding: '24px',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        boxShadow: isActive ? `0 0 20px ${color}40` : 'none',
+        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        border: isActive ? `1px solid rgba(${activeColor === emeraldTeal ? '0, 212, 170' : '240, 165, 0'}, 0.5)` : '1px solid rgba(255, 255, 255, 0.06)',
+        boxShadow: isActive ? `0 10px 30px rgba(${activeColor === emeraldTeal ? '0, 212, 170' : '240, 165, 0'}, 0.15)` : 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        color: '#fff'
+        textAlign: 'center',
+        color: '#fff',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden'
     });
 
-    const inputStyle = {
-        background: 'rgba(0, 0, 0, 0.3)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '12px',
-        padding: '12px 16px',
-        color: '#fff',
-        width: '100%',
-        outline: 'none',
-        fontFamily: "'Orbitron', monospace",
-        letterSpacing: '1px'
+    const formatCurrency = (val) => {
+        return val.toLocaleString('en-US');
     };
 
     return (
-        <div ref={containerRef} className="ps-container">
+        <div ref={containerRef} className="ps-container pt-2">
+            
             {/* Header */}
-            <div className="ps-entrance d-flex justify-content-between align-items-center mb-4">
-                <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: '700', color: '#fff', fontSize: '1.5rem', margin: 0 }}>
-                    SECURE <span style={{ color: '#818cf8' }}>GATEWAY</span>
-                </h2>
-                <div style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600' }}>
-                    <i className="fas fa-lock me-1"></i> SSL ENCRYPTED
-                </div>
-            </div>
-
-            {/* Amount Display */}
-            <div className="ps-entrance mb-5 text-center">
-                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '8px', fontFamily: "'Poppins', sans-serif" }}>TOTAL PAYABLE</label>
-                <div style={{ fontSize: '3.5rem', fontFamily: "'Orbitron', sans-serif", fontWeight: '800', color: '#fff', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)' }}>
-                    ৳{amount}
-                </div>
-            </div>
-
-            {/* Method Selection */}
-            <div className="ps-entrance row g-3 mb-5">
-                <div className="col-6">
-                    <div onClick={handleOnlinePayment}
-                        style={tileStyle(method === 'online', '#818cf8')}
-                        onMouseEnter={(e) => { if (method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                        onMouseLeave={(e) => { if (method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                    >
-                        <i className="fas fa-satellite-dish" style={{ fontSize: '1.8rem', color: method === 'online' ? '#fff' : '#818cf8' }}></i>
-                        <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>ONLINE PAY</span>
+            <div className="ps-entrance d-flex justify-content-between align-items-center mb-4 pb-2">
+                <div className="d-flex align-items-center gap-3">
+                    <div style={{
+                        width: '45px', height: '45px', borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #f0a500, #ff6b35)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#0a0e1a', fontSize: '1.2rem', boxShadow: '0 5px 15px rgba(240, 165, 0, 0.3)'
+                    }}>
+                        <i className="fas fa-gem"></i>
+                    </div>
+                    <div>
+                        <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: '800', color: '#fff', fontSize: '1.3rem', margin: '0 0 -2px 0', letterSpacing: '1px' }}>
+                            SECURE PAY
+                        </h2>
+                        <span style={{ color: primaryGold, fontSize: '0.7rem', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                            Gateway Portal
+                        </span>
                     </div>
                 </div>
-                <div className="col-6">
-                    <div onClick={handleHandCash}
-                        style={tileStyle(method === 'hand', '#10b981')}
-                        onMouseEnter={(e) => { if (method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                        onMouseLeave={(e) => { if (method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                    >
-                        <i className="fas fa-hand-holding-medical" style={{ fontSize: '1.8rem', color: method === 'hand' ? '#fff' : '#10b981' }}></i>
-                        <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>CASH / CR</span>
+                <div style={{ 
+                    background: 'rgba(0, 212, 170, 0.1)', border: '1px solid rgba(0, 212, 170, 0.3)', 
+                    color: emeraldTeal, padding: '6px 14px', borderRadius: '30px', 
+                    fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                }}>
+                    <i className="fas fa-shield-alt"></i>
+                    SSL Secured
+                </div>
+            </div>
+
+            {/* Total Payable Display */}
+            <div className="ps-entrance mb-4 position-relative" style={{ 
+                ...glassPanelStyle, padding: '35px 30px', overflow: 'hidden'
+            }}>
+                {/* Decorative Glowing Shape */}
+                <div style={{ 
+                    position: 'absolute', top: '-40%', right: '-10%', width: '200px', height: '200px', 
+                    background: 'radial-gradient(circle, rgba(240,165,0,0.15) 0%, rgba(240,165,0,0) 70%)', 
+                    borderRadius: '50%', zIndex: 0
+                }}></div>
+                
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '15px' }}>
+                        TOTAL PAYABLE
+                    </label>
+                    <div style={{ fontSize: '3.5rem', fontFamily: "'Orbitron', monospace", fontWeight: '800', color: primaryGold, marginBottom: '5px', letterSpacing: '1px', textShadow: '0 0 30px rgba(240, 165, 0, 0.4)' }}>
+                        ৳{formatCurrency(amount)}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>
+                        Select your preferred gateway method
+                    </div>
+                </div>
+            </div>
+
+            {/* Method Selection Title */}
+            <div className="ps-entrance mb-3 text-center">
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '3px', textTransform: 'uppercase' }}>PAYMENT METHOD</span>
+            </div>
+
+            {/* Method Cards */}
+            <div className="ps-entrance row g-3 mb-4">
+                <div className="col-sm-6">
+                    <div onClick={handleOnlinePayment} style={tileStyle(method === 'online', primaryGold)}
+                         onMouseOver={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                         onMouseOut={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
+                        <div style={{
+                            width: '50px', height: '50px', borderRadius: '14px',
+                            background: 'rgba(240, 165, 0, 0.1)', color: primaryGold,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(240,165,0,0.2)'
+                        }}>
+                            <i className="fas fa-globe"></i>
+                        </div>
+                        <h4 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '700', margin: '0 0 5px 0', fontFamily: "'Space Grotesk', sans-serif" }}>Mobile Banking</h4>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: '500' }}>bKash / Nagad</span>
+                    </div>
+                </div>
+                <div className="col-sm-6">
+                    <div onClick={handleHandCash} style={tileStyle(method === 'hand', emeraldTeal)}
+                         onMouseOver={(e) => { if(method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                         onMouseOut={(e) => { if(method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
+                        <div style={{
+                            width: '50px', height: '50px', borderRadius: '14px',
+                            background: 'rgba(0, 212, 170, 0.1)', color: emeraldTeal,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,212,170,0.2)'
+                        }}>
+                            <i className="fas fa-wallet"></i>
+                        </div>
+                        <h4 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '700', margin: '0 0 5px 0', fontFamily: "'Space Grotesk', sans-serif" }}>Cash / CR</h4>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: '500' }}>Direct transfer</span>
                     </div>
                 </div>
             </div>
 
             {/* Receipt Summary */}
-            <div className="ps-entrance p-4 mb-4" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="d-flex justify-content-between mb-2">
-                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>Base Config</span>
-                    <span style={{ color: '#fff', fontFamily: "'Orbitron', monospace" }}>৳{amount}</span>
+            <div className="ps-entrance" style={{ ...glassPanelStyle, padding: '30px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>Config Base Total</span>
+                    <span style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>৳{formatCurrency(amount)}</span>
                 </div>
-                <div className="d-flex justify-content-between mb-3">
-                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>Protocol Fee</span>
-                    <span style={{ color: '#fbbf24', fontFamily: "'Orbitron', monospace" }}>+ ৳{extraCharge}</span>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: '500', fontFamily: "'Space Grotesk', sans-serif" }}>Service Fees</span>
+                    <span style={{ color: extraCharge > 0 ? primaryGold : '#34d399', fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Orbitron', monospace" }}>
+                        + ৳{formatCurrency(extraCharge)}
+                    </span>
                 </div>
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', marginBottom: '15px' }}></div>
+                
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '20px 0' }}></div>
+                
                 <div className="d-flex justify-content-between align-items-center">
-                    <span style={{ color: '#fff', fontWeight: '600' }}>SETTLEMENT TOTAL</span>
-                    <span style={{ color: '#818cf8', fontWeight: '700', fontSize: '1.4rem', fontFamily: "'Orbitron', sans-serif" }}>৳{total}</span>
+                    <span style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '700', letterSpacing: '1px' }}>Final Settlement</span>
+                    <span style={{ color: '#fff', fontWeight: '800', fontSize: '1.8rem', fontFamily: "'Orbitron', monospace", textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
+                        ৳{formatCurrency(total)}
+                    </span>
                 </div>
             </div>
 
-            {/* Hand Cash Confirmation */}
+            {/* Hand Cash Details Alert */}
             {method === "hand" && (
-                <div className="ps-entrance">
-                    <button
-                        onClick={() => {
-                            if (onFinalConfirm) onFinalConfirm({ amount: Number(amount), method: "hand", total: Number(amount) });
-                            showToast("Protocol accepted. Proceed to initialization.", "success");
-                        }}
-                        style={{
-                            width: '100%',
-                            padding: '18px',
-                            borderRadius: '16px',
-                            background: '#10b981',
-                            color: '#000',
-                            fontWeight: '700',
-                            fontSize: '1rem',
-                            border: 'none',
-                            fontFamily: "'Orbitron', sans-serif",
-                            boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-                            transition: 'all 0.3s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        CONFIRM CASH PROTOCOL
-                    </button>
-                    <p className="text-center mt-3" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
-                        * Verify physical currency transfer with Unit Commander (CR).
-                    </p>
+                <div className="ps-entrance mt-4" style={{ 
+                    background: 'rgba(0, 212, 170, 0.05)', border: '1px solid rgba(0, 212, 170, 0.2)', 
+                    borderRadius: '16px', padding: '20px', display: 'flex', gap: '20px', alignItems: 'flex-start'
+                }}>
+                    <div style={{ fontSize: '1.5rem', color: emeraldTeal }}>
+                        <i className="fas fa-info-circle"></i>
+                    </div>
+                    <div>
+                        <h5 style={{ color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontWeight: '700', margin: '0 0 8px 0', fontSize: '1.1rem' }}>Cash Payment Selected</h5>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+                            You will hand over the cash directly to your respective Class Representative (CR) after placing the order. Verification will be done offline.
+                        </p>
+                    </div>
                 </div>
             )}
 
-            {/* Online Payment Modal */}
+            {/* Premium Glass Modal */}
             {showModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000,
+                    background: 'rgba(10, 14, 26, 0.85)', backdropFilter: 'blur(12px)', zIndex: 1000,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
                 }}>
-                    <div ref={modalRef} style={{ ...glassStyle, width: '100%', maxWidth: '450px', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div ref={modalRef} style={{ ...glassPanelStyle, width: '100%', maxWidth: '480px', padding: '35px', border: '1px solid rgba(240,165,0,0.2)' }}>
                         <div className="d-flex justify-content-between align-items-start mb-4">
                             <div>
-                                <h4 style={{ color: '#fff', margin: 0, fontFamily: "'Orbitron', sans-serif" }}>SELECT CHANNEL</h4>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', margin: 0 }}>Encryption Level: High</p>
+                                <h4 style={{ color: '#fff', margin: 0, fontFamily: "'Orbitron', sans-serif", fontWeight: '700', letterSpacing: '1px' }}>SELECT GATEWAY</h4>
+                                <p style={{ color: primaryGold, fontSize: '0.85rem', fontWeight: '600', margin: '5px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Encrypted Channel</p>
                             </div>
-                            <button onClick={closePortal} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '1.2rem' }}>
+                            <button onClick={closePortal} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.4rem', padding: '0', transition: 'color 0.2s' }}
+                                    onMouseOver={e=>e.currentTarget.style.color='#fff'} onMouseOut={e=>e.currentTarget.style.color='rgba(255,255,255,0.4)'}>
                                 <i className="fas fa-times"></i>
                             </button>
                         </div>
@@ -226,45 +271,59 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                             {Object.entries(CARRIERS).map(([key, data]) => (
                                 <div key={key} className="col-6">
                                     <div onClick={() => setProvider(key)}
-                                        style={tileStyle(provider === key, data.color)}
+                                        style={{
+                                            ...tileStyle(provider === key, data.color),
+                                            padding: '24px 20px',
+                                            alignItems: 'center',
+                                            textAlign: 'center'
+                                        }}
                                     >
                                         <div style={{
-                                            width: '40px', height: '40px', borderRadius: '50%', background: '#fff',
+                                            width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontWeight: '800', color: data.color
+                                            fontWeight: '800', color: data.color, marginBottom: '15px', fontSize: '1.3rem'
                                         }}>
                                             {data.name[0]}
                                         </div>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{data.name}</span>
+                                        <span style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff' }}>{data.name}</span>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
                         {provider && (
-                            <div className="p-4 mb-4" style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', marginBottom: '5px' }}>TARGET FREQUENCY (NUMBER)</label>
-                                <div className="d-flex align-items-center justify-content-between mb-4" style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 15px', borderRadius: '10px' }}>
-                                    <span style={{ color: '#fff', fontFamily: "'Orbitron', monospace", fontSize: '1.2rem', letterSpacing: '2px' }}>{CARRIERS[provider].number}</span>
-                                    <button onClick={() => copyToClipboard(CARRIERS[provider].number)} style={{ background: 'transparent', border: 'none', color: '#818cf8' }}>
+                            <div className="p-4 mb-4" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>SEND MONEY TO</label>
+                                <div className="d-flex align-items-center justify-content-between mb-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 20px', borderRadius: '12px' }}>
+                                    <span style={{ color: '#fff', fontFamily: "'Orbitron', monospace", fontSize: '1.3rem', fontWeight: '700', letterSpacing: '2px' }}>{CARRIERS[provider].number}</span>
+                                    <button onClick={() => copyToClipboard(CARRIERS[provider].number)} style={{ background: 'transparent', border: 'none', color: CARRIERS[provider].color, fontSize: '1.2rem', transition: 'transform 0.2s' }}
+                                            onMouseOver={e=>e.currentTarget.style.transform='scale(1.1)'} onMouseOut={e=>e.currentTarget.style.transform='scale(1)'}>
                                         <i className="fas fa-copy"></i>
                                     </button>
                                 </div>
 
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', marginBottom: '8px' }}>TRANSACTION HASH (TrxID)</label>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>TRANSACTION HASH (TrxID)</label>
                                 <input
                                     type="text"
                                     value={txnId}
                                     onChange={(e) => setTxnId(e.target.value)}
-                                    placeholder="ENTER ID..."
-                                    style={inputStyle}
+                                    placeholder="Enter TrxID..."
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '12px', padding: '16px 20px', color: '#fff', width: '100%',
+                                        outline: 'none', fontFamily: "'Space Grotesk', monospace", fontSize: '1.1rem',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onFocus={(e) => { e.target.style.borderColor = primaryGold; e.target.style.boxShadow = `0 0 15px rgba(240,165,0,0.2)` }}
+                                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none' }}
                                 />
                             </div>
                         )}
 
-                        <div className="d-flex gap-3">
-                            <button onClick={closePortal} style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-                                ABORT
+                        <div className="d-flex gap-3 mt-5">
+                            <button onClick={closePortal} style={{ flex: 1, padding: '16px', borderRadius: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: '600', letterSpacing: '1px', transition: 'all 0.2s' }}
+                                    onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                CANCEL
                             </button>
                             <button
                                 onClick={() => {
@@ -277,13 +336,16 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                                 }}
                                 disabled={!provider || !txnId.trim()}
                                 style={{
-                                    flex: 2, padding: '14px', borderRadius: '12px',
-                                    background: provider && txnId.trim() ? '#818cf8' : 'rgba(129, 140, 248, 0.2)',
-                                    color: provider && txnId.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
-                                    border: 'none', fontWeight: '600',
+                                    flex: 2, padding: '16px', borderRadius: '50px',
+                                    background: provider && txnId.trim() ? primaryGold : 'rgba(255,255,255,0.05)',
+                                    color: provider && txnId.trim() ? '#0a0e1a' : 'rgba(255,255,255,0.3)',
+                                    border: 'none', fontWeight: '800', fontFamily: "'Orbitron', sans-serif", letterSpacing: '1px',
                                     cursor: provider && txnId.trim() ? 'pointer' : 'not-allowed',
-                                    transition: 'all 0.3s'
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    boxShadow: provider && txnId.trim() ? '0 10px 20px rgba(240,165,0,0.3)' : 'none'
                                 }}
+                                onMouseOver={e => { if(provider && txnId.trim()) e.currentTarget.style.transform='scale(1.03)' }}
+                                onMouseOut={e => { if(provider && txnId.trim()) e.currentTarget.style.transform='scale(1)' }}
                             >
                                 VERIFY & PROCEED
                             </button>
