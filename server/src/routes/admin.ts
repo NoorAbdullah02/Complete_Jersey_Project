@@ -27,24 +27,13 @@ router.post('/register', validate(adminRegisterSchema), async (req: Request, res
         try {
             // Check if this is the first user
             const userCount = await client.query('SELECT COUNT(*) FROM admin_users');
-            const isFirstUser = parseInt(userCount.rows[0].count) === 0;
+            const adminCount = parseInt(userCount.rows[0].count);
+            const isFirstUser = adminCount === 0;
 
-            // If not the first user, require authentication and 'admin' role
-            if (!isFirstUser) {
-                // We manually handle this here because we want to allow the first user without auth
-                const authHeader = req.headers['authorization'];
-                const token = authHeader && authHeader.split(' ')[1];
-                if (!token) return res.status(401).json({ error: 'Auth required for registration' });
-
-                try {
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-                    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Only admins can register others' });
-                    // Continue...
-                } catch (e) {
-                    return res.status(401).json({ error: 'Invalid token' });
-                }
+            // Require absolute cap of 3 admins total
+            if (adminCount >= 3) {
+                return res.status(403).json({ error: 'Registration locked. Maximum of 3 admins allowed.' });
             }
-
             // Check if username/email exists
             const existing = await client.query(
                 'SELECT id FROM admin_users WHERE username = $1 OR email = $2',

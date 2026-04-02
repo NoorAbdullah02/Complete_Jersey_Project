@@ -47,7 +47,7 @@ function Stars(props) {
             <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
                 <PointMaterial
                     transparent
-                    color="#f0a500"
+                    color="#00f2fe"
                     size={0.003}
                     sizeAttenuation={true}
                     depthWrite={false}
@@ -66,7 +66,7 @@ export default function ThreeBackground() {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, background: '#000' }}>
             <Canvas
                 camera={{ position: [0, 0, 1] }}
-                pixelRatio={pixelRatio}
+                dpr={pixelRatio}
                 gl={{
                     antialias: false,
                     powerPreference: 'high-performance',
