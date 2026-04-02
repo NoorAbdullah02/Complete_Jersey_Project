@@ -7,7 +7,6 @@ import { recommendSize, FitPreference } from '../utils/aiSizer';
 
 const router = Router();
 
-// AI Size Recommendation
 router.post('/recommend-size', (req: Request, res: Response) => {
     try {
         const { height, weight, fit } = req.body;
@@ -22,7 +21,6 @@ router.post('/recommend-size', (req: Request, res: Response) => {
     }
 });
 
-// Validate Coupon
 router.get('/validate-coupon', async (req: Request, res: Response) => {
     try {
         const { code } = req.query;
@@ -160,7 +158,6 @@ router.post('/', validate(createOrderSchema), async (req: Request, res: Response
         try {
             await client.query('BEGIN');
 
-            // 1. Fraud Detection: Prevent duplicate transaction IDs within 24 hours
             if (transactionId) {
                 const dupCheck = await client.query(
                     'SELECT id FROM payment_logs WHERE transaction_id = $1 AND status = \'success\' AND created_at > NOW() - INTERVAL \'24 hours\'',
@@ -188,7 +185,6 @@ router.post('/', validate(createOrderSchema), async (req: Request, res: Response
 
             const order = orderResult.rows[0];
 
-            // 3. Insert Items (Unlimited Ordering - No Stock Check)
             for (const item of items) {
                 await client.query(`
                     INSERT INTO order_items (order_id, jersey_number, jersey_name, batch, size, collar_type, sleeve_type, item_price)
