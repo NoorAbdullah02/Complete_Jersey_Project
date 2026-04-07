@@ -13,12 +13,17 @@ const api = axios.create({
   },
 });
 
-// Attach JWT token to admin requests
+// Attach tokens to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('adminAccessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const adminToken = localStorage.getItem('adminAccessToken');
+  const userToken = localStorage.getItem('userAccessToken');
+  
+  if (adminToken && config.url.includes('/admin')) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (userToken) {
+    config.headers.Authorization = `Bearer ${userToken}`;
   }
+  
   return config;
 });
 
@@ -42,71 +47,58 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle 401 Unauthorized for both ADMIN and USER
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log('🔒 401 Unauthorized detected. Attempting token refresh...');
-      if (isRefreshing) {
-        console.log('⏳ Refresh already in progress, queuing request.');
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
+      
+      const isAdmin = originalRequest.url.includes('/admin');
+      const refreshToken = isAdmin 
+        ? localStorage.getItem('adminRefreshToken') 
+        : localStorage.getItem('userRefreshToken');
 
-      const refreshToken = localStorage.getItem('adminRefreshToken');
       if (!refreshToken) {
-        console.error('❌ No refresh token found in localStorage. Forcing logout.');
-        isRefreshing = false;
-        localStorage.removeItem('adminAccessToken');
         return Promise.reject(error);
       }
 
-      console.log('🔄 Calling refresh endpoint...');
       try {
-        const { data } = await axios.post(`${API_BASE}/admin/refresh`, { refreshToken }, {
+        const refreshUrl = isAdmin ? '/admin/refresh' : '/user-auth/refresh';
+        const { data } = await axios.post(`${API_BASE}${refreshUrl}`, { refreshToken }, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
+        
         const newToken = data.accessToken;
-        console.log('✅ Token refreshed successfully!');
-        localStorage.setItem('adminAccessToken', newToken);
+        const newRefreshToken = data.refreshToken;
+
+        if (isAdmin) {
+          localStorage.setItem('adminAccessToken', newToken);
+          if (newRefreshToken) localStorage.setItem('adminRefreshToken', newRefreshToken);
+        } else {
+          localStorage.setItem('userAccessToken', newToken);
+          if (newRefreshToken) localStorage.setItem('userRefreshToken', newRefreshToken);
+        }
+
         api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-        processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
-        processQueue(refreshError, null);
-        localStorage.removeItem('adminAccessToken');
-        localStorage.removeItem('adminRefreshToken');
-        if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
-          console.warn('🔄 Redirecting to login page due to failed refresh.');
-          window.location.href = '/admin';
+        if (isAdmin) {
+          localStorage.removeItem('adminAccessToken');
+          localStorage.removeItem('adminRefreshToken');
+        } else {
+          localStorage.removeItem('userAccessToken');
+          localStorage.removeItem('userRefreshToken');
         }
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 
-    // Handle 403 — only logout on auth-related 403, not CSRF failures
     if (error.response?.status === 403) {
       const errorMsg = error.response?.data?.error || '';
-      const isCsrf = errorMsg.includes('CSRF');
-      if (!isCsrf) {
-        console.error('🚫 403 Forbidden. Invalid token or session expired. Logging out.');
-        localStorage.removeItem('adminAccessToken');
-        localStorage.removeItem('adminRefreshToken');
-        if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin') {
-          window.location.href = '/admin';
-        }
-      } else {
-        console.warn('🛡️ CSRF protection triggered — not logging out.');
+      if (errorMsg.includes('CSRF')) {
+        console.error('🛡️ CSRF Blocked! This request is missing the required security header.');
       }
     }
+    
     return Promise.reject(error);
   }
 );
@@ -184,5 +176,18 @@ export const deleteExpense = (id) => api.delete(`/admin/expenses/${id}`);
 // ====== REPORTS ======
 export const downloadReport = (type) =>
   api.get(`/admin/reports/${type}`, { responseType: 'blob' });
+
+// ====== USER AUTH (MODIFY ORDER) ======
+export const requestUserOtp = (email, orderId) => api.post('/user-auth/request-otp', { email, orderId });
+export const verifyUserOtp = (email, otp) => api.post('/user-auth/verify-otp', { email, otp });
+export const refreshUserToken = (refreshToken) => api.post('/user-auth/refresh', { refreshToken });
+
+export const getMyOrders = () => api.get('/orders/my-orders');
+export const getMyOrderLogs = (orderId) => api.get(`/orders/${orderId}/logs`);
+export const updateUserJersey = (orderId, itemId, data) => api.put(`/orders/${orderId}/items/${itemId}`, data);
+export const deleteUserJersey = (orderId, itemId) => api.delete(`/orders/${orderId}/items/${itemId}`);
+
+// ====== ADMIN ORDERS LOGS ======
+export const getOrderLogs = (orderId) => api.get(`/admin/orders/${orderId}/logs`);
 
 export default api;

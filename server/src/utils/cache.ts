@@ -20,20 +20,22 @@ try {
 }
 
 export const cacheSet = async (key: string, value: any, ttlSeconds: number = 3600) => {
-    if (!redis) return;
+    if (!redis || redis.status !== 'ready') return;
     try {
         await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
-    } catch (e) {
+    } catch (e: any) {
+        if (e.message && e.message.includes('Connection is closed')) return;
         console.error('Cache set error:', e);
     }
 };
 
 export const cacheGet = async <T>(key: string): Promise<T | null> => {
-    if (!redis) return null;
+    if (!redis || redis.status !== 'ready') return null;
     try {
         const data = await redis.get(key);
         return data ? JSON.parse(data) : null;
-    } catch (e) {
+    } catch (e: any) {
+        if (e.message && e.message.includes('Connection is closed')) return null;
         console.error('Cache get error:', e);
         return null;
     }

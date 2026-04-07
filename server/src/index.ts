@@ -20,6 +20,7 @@ import expenseRoutes from './routes/expenses';
 import reportRoutes from './routes/reports';
 import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
+import userAuthRoutes from './routes/userAuth';
 
 const app = express();
 const httpServer = createServer(app);
@@ -37,9 +38,11 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED (Safe)' : 'MISSING (
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 console.log('------------------------');
 
-// Enable trust proxy for production
-if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', true);
+// Enable trust proxy if configured
+if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1); // Trust first hop
+} else {
+    app.set('trust proxy', false);
 }
 const PORT = process.env.PORT || 3000;
 
@@ -61,6 +64,7 @@ app.use(helmet({
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
+    validate: { trustProxy: false }, // Disable trust proxy validation to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
 });
 
 // Basic middleware
@@ -107,6 +111,7 @@ app.get('/api/health', (req, res) => {
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user-auth', userAuthRoutes);
 app.use('/api/orders', apiLimiter, orderRoutes);
 app.use('/api/admin', apiLimiter, adminRoutes);
 app.use('/api/admin', adminOrderRoutes);

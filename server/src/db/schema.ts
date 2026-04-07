@@ -3,9 +3,9 @@ import { relations } from 'drizzle-orm';
 
 export const orders = pgTable('orders', {
     id: serial('id').primaryKey(),
-    name: varchar('name', { length: 30 }).notNull(),
-    mobileNumber: varchar('mobile_number', { length: 15 }).notNull(),
-    email: varchar('email', { length: 40 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    mobileNumber: varchar('mobile_number', { length: 20 }).notNull(),
+    email: varchar('email', { length: 100 }).notNull(),
     transactionId: varchar('transaction_id', { length: 30 }),
     notes: text('notes'),
     finalPrice: decimal('final_price', { precision: 10, scale: 2 }).notNull(),
@@ -18,8 +18,8 @@ export const orderItems = pgTable('order_items', {
     id: serial('id').primaryKey(),
     orderId: integer('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull(),
     jerseyNumber: varchar('jersey_number', { length: 6 }).notNull(),
-    jerseyName: varchar('jersey_name', { length: 30 }),
-    batch: varchar('batch', { length: 15 }),
+    jerseyName: varchar('jersey_name', { length: 100 }),
+    batch: varchar('batch', { length: 50 }),
     size: varchar('size', { length: 10 }).notNull(),
     collarType: varchar('collar_type', { length: 20 }).notNull(),
     sleeveType: varchar('sleeve_type', { length: 20 }).notNull(),
@@ -32,6 +32,16 @@ export const users = pgTable('users', {
     name: varchar('name', { length: 60 }),
     passwordHash: varchar('password_hash', { length: 200 }),
     isVerified: boolean('is_verified').default(false),
+    refreshToken: varchar('refresh_token', { length: 500 }),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const userOtps = pgTable('user_otps', {
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 100 }).notNull(),
+    otp: varchar('otp', { length: 6 }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    attempts: integer('attempts').default(0),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -85,6 +95,15 @@ export const auditLogs = pgTable('audit_logs', {
     adminUserId: integer('admin_user_id').references(() => adminUsers.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 100 }).notNull(),
     metadata: text('metadata'), // JSON string
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const orderLogs = pgTable('order_logs', {
+    id: serial('id').primaryKey(),
+    orderId: integer('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull(),
+    action: varchar('action', { length: 150 }).notNull(),
+    details: text('details'), // JSON string containing old vs new states
+    performedBy: varchar('performed_by', { length: 100 }), // email of user, or 'admin'
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -143,6 +162,11 @@ export const expenses = pgTable('expenses', {
 export const ordersRelations = relations(orders, ({ many }) => ({
     items: many(orderItems),
     paymentLogs: many(paymentLogs),
+    logs: many(orderLogs),
+}));
+
+export const orderLogsRelations = relations(orderLogs, ({ one }) => ({
+    order: one(orders, { fields: [orderLogs.orderId], references: [orders.id] }),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

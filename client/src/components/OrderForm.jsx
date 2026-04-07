@@ -581,7 +581,7 @@ export default function OrderForm({ onSubmit, onPriceChange }) {
                         onMouseOver={(e) => { if (customer.preSelectedMethod) { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(0, 242, 254, 0.7)'; } }}
                         onMouseOut={(e) => { if (customer.preSelectedMethod) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 242, 254, 0.5)'; } }}
                     >
-                        INITIATE ORDER
+                        {customer.preSelectedMethod === 'hand' ? 'PLACE ORDER (CASH)' : 'INITIATE ORDER'}
                     </button>
                 </div>
             </form>

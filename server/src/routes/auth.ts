@@ -35,7 +35,7 @@ router.post('/register-passkey/options', authenticateToken, async (req: AuthRequ
             const user = userResult.rows[0];
 
             const authsResult = await client.query('SELECT credential_id FROM authenticators WHERE admin_user_id = $1', [adminId]);
-            const excludeCredentials = authsResult.rows.map(row => ({
+            const excludeCredentials = authsResult.rows.map((row: any) => ({
                 id: row.credential_id,
                 type: 'public-key' as const,
             }));
@@ -152,7 +152,7 @@ router.post('/login-passkey/options', async (req: Request, res: Response) => {
             if (!user) return res.status(404).json({ error: 'User not found' });
 
             const authsResult = await client.query('SELECT credential_id FROM authenticators WHERE admin_user_id = $1', [user.id]);
-            const allowCredentials = authsResult.rows.map(row => ({
+            const allowCredentials = authsResult.rows.map((row: any) => ({
                 id: row.credential_id,
                 type: 'public-key' as const,
             }));

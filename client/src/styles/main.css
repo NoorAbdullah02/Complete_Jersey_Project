@@ -172,6 +172,25 @@ body {
     }
 }
 
+/* New animations for Modify Order System */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
 /* Futuristic Hero Header */
 .hero-header {
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.5)),
@@ -2707,4 +2726,411 @@ body {
         padding: 14px !important;
         border-radius: 18px !important;
     }
+}
+
+/* Next-Gen Cyber Aesthetics */
+.holographic-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.holographic-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 242, 254, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    transition: transform 0.5s ease-out;
+}
+
+.holographic-card:hover::before {
+    transform: translate(10%, 10%);
+}
+
+.cyber-glow-border {
+    position: relative;
+}
+
+.cyber-glow-border::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    background-size: 200% 100%;
+    animation: border-flow 4s linear infinite;
+    z-index: -1;
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+}
+
+@keyframes border-flow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.neon-pulse {
+    animation: neon-pulse-glow 2s infinite alternate;
+}
+
+@keyframes neon-pulse-glow {
+    0% { filter: drop-shadow(0 0 5px var(--primary)); opacity: 0.8; }
+    100% { filter: drop-shadow(0 0 15px var(--primary)); opacity: 1; }
+}
+
+.cyber-input {
+    background: rgba(10, 15, 30, 0.7) !important;
+    border: 1px solid rgba(0, 242, 254, 0.2) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    letter-spacing: 2px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.cyber-input-caps {
+    text-transform: uppercase !important;
+}
+
+.cyber-input:focus {
+    background: rgba(10, 15, 30, 0.9) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
+    transform: translateY(-2px);
+}
+
+.floating-island {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.animate-float {
+    animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.glitch-text {
+    position: relative;
+}
+
+.glitch-text::before {
+    content: attr(data-text);
+    position: absolute;
+    left: -2px;
+    text-shadow: 2px 0 var(--primary);
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim 5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+    0% { clip: rect(41px, 9999px, 1px, 0); }
+    20% { clip: rect(100px, 9999px, 13px, 0); }
+    40% { clip: rect(4px, 9999px, 86px, 0); }
+    60% { clip: rect(9px, 9999px, 92px, 0); }
+    80% { clip: rect(3px, 9999px, 2px, 0); }
+    100% { clip: rect(76px, 9999px, 78px, 0); }
+}
+
+/* =============================================
+   MODIFY ORDER PORTAL — Dark Theme Overrides
+   ============================================= */
+
+.modify-portal .form-control,
+.modify-portal .form-select {
+    background: rgba(15, 23, 42, 0.9) !important;
+    color: #ffffff !important;
+    border: 2px solid rgba(255, 255, 255, 0.12) !important;
+    caret-color: var(--primary);
+}
+
+.modify-portal .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.modify-portal .form-control:focus,
+.modify-portal .form-select:focus {
+    background: rgba(15, 23, 42, 1) !important;
+    color: #ffffff !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
+}
+
+.modify-portal .form-label {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+}
+
+/* Edit Modal Dark Overrides */
+.edit-modal .form-control,
+.edit-modal .form-select {
+    background: rgba(15, 23, 42, 0.9) !important;
+    color: #ffffff !important;
+    border: 2px solid rgba(255, 255, 255, 0.12) !important;
+    caret-color: var(--primary);
+}
+
+.edit-modal .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.edit-modal .form-control:focus,
+.edit-modal .form-select:focus {
+    background: rgba(15, 23, 42, 1) !important;
+    color: #ffffff !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
+}
+
+.edit-modal .form-label {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+}
+
+/* Selector buttons in dark context */
+.modify-portal .selector-btn,
+.edit-modal .selector-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.modify-portal .selector-btn:hover,
+.edit-modal .selector-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+.modify-portal .selector-btn.active,
+.edit-modal .selector-btn.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+    border-color: var(--primary) !important;
+    color: #fff !important;
+    box-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* Order card expanded items */
+.mo-item-row {
+    padding: 20px 22px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.mo-item-row:hover {
+    background: rgba(0, 242, 254, 0.06);
+    border-color: rgba(0, 242, 254, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.mo-badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary);
+    font-weight: 900;
+    font-size: 0.95rem;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.mo-item-name {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mo-item-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.mo-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mo-btn-edit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 14px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mo-btn-edit:hover {
+    background: rgba(59, 130, 246, 0.22);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.mo-btn-delete {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 14px;
+    background: rgba(251, 113, 133, 0.12);
+    border: 1px solid rgba(251, 113, 133, 0.25);
+    color: #fb7185;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mo-btn-delete:hover {
+    background: rgba(251, 113, 133, 0.22);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(251, 113, 133, 0.2);
+}
+
+/* Preview card in edit modal */
+.mo-preview {
+    padding: 22px 26px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.1), rgba(0, 242, 254, 0.03));
+    border: 1px solid rgba(0, 242, 254, 0.18);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.mo-preview-badge {
+    width: 65px;
+    height: 65px;
+    border-radius: 20px;
+    background: rgba(0, 242, 254, 0.15);
+    border: 2px solid rgba(0, 242, 254, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mo-preview-badge span {
+    color: var(--primary);
+    font-weight: 900;
+    font-size: 1.5rem;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.mo-preview-name {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mo-preview-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.mo-preview-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(0, 242, 254, 0.12);
+    padding: 4px 12px;
+    border-radius: 8px;
+}
+
+/* Action buttons for edit modal */
+.mo-btn-cancel {
+    flex: 1;
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mo-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.mo-btn-save {
+    flex: 1;
+    padding: 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    color: #0a0e1a;
+    font-weight: 900;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.mo-btn-save:hover {
+    box-shadow: 0 0 30px rgba(0, 242, 254, 0.35);
+    transform: translateY(-2px);
+}
+
+.mo-btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }

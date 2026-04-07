@@ -205,9 +205,9 @@ router.patch('/orders/:id', async (req: AuthRequest, res: Response) => {
 
                     await client.query(`
                         UPDATE order_items 
-                        SET jersey_number = $1, size = $2, jersey_name = $3
-                        WHERE id = $4 AND order_id = $5
-                    `, [jNum, jSize, jName, item.id, req.params.id]);
+                        SET jersey_number = $1, size = $2, jersey_name = $3, batch = $4
+                        WHERE id = $5 AND order_id = $6
+                    `, [jNum, jSize, jName, item.batch, item.id, req.params.id]);
                 }
             }
 
@@ -339,6 +339,26 @@ router.post('/orders/bulk-status', async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Bulk update error:', error);
         res.status(500).json({ error: 'Failed to update orders' });
+    }
+});
+
+// Get order history logs
+router.get('/orders/:id/logs', async (req: AuthRequest, res: Response) => {
+    try {
+        const { client } = await getDb();
+        try {
+            const result = await client.query(`
+                SELECT * FROM order_logs 
+                WHERE order_id = $1 
+                ORDER BY created_at DESC
+            `, [req.params.id]);
+            res.json({ success: true, logs: result.rows });
+        } finally {
+            await client.end();
+        }
+    } catch (error) {
+        console.error('Get order logs error:', error);
+        res.status(500).json({ error: 'Failed to fetch order logs' });
     }
 });
 

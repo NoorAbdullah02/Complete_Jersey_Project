@@ -3,22 +3,23 @@ import { z } from 'zod';
 // --- ORDER SCHEMAS ---
 
 export const orderItemSchema = z.object({
-    jerseyNumber: z.string().min(1).max(6),
-    jerseyName: z.string().max(30).optional(),
-    batch: z.string().max(15).optional(),
-    size: z.string().min(1).max(10),
-    collarType: z.string().min(1).max(20),
-    sleeveType: z.string().min(1).max(20),
+    jerseyNumber: z.string().min(1).max(10),
+    jerseyName: z.string().max(100).optional(),
+    batch: z.string().max(50).optional(),
+    size: z.string().min(1).max(20),
+    collarType: z.string().min(1).max(30),
+    sleeveType: z.string().min(1).max(30),
     itemPrice: z.number().positive(),
 });
 
 export const createOrderSchema = z.object({
     body: z.object({
-        name: z.string().min(2).max(30),
-        mobileNumber: z.string().min(10).max(15),
-        email: z.string().email().max(40),
-        transactionId: z.string().max(30).optional(),
-        notes: z.string().max(500).optional(),
+        name: z.string().min(2).max(100),
+        mobileNumber: z.string().min(10).max(20),
+        email: z.string().email().max(100),
+        transactionId: z.string().max(40).optional(),
+        notes: z.string().max(1000).optional(),
+        batch: z.string().max(50).optional(),
         finalPrice: z.number().positive(),
         items: z.array(orderItemSchema).min(1),
     }),

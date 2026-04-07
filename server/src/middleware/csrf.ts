@@ -20,6 +20,7 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction) 
         '/api/auth/login-passkey',
         '/api/auth/register-passkey',
         '/api/orders',
+        '/api/user-auth',
     ];
     if (publicRoutes.some(route => req.path.startsWith(route))) {
         return next();

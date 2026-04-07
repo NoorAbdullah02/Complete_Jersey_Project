@@ -253,6 +253,23 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                             <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>Total Amount</span>
                             <span style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', fontFamily: "'Orbitron', sans-serif" }}>{formatCurrency(total)} TK</span>
                         </div>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const uniqueHandId = `HAND-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+                                onFinalConfirm({ amount: Number(amount), method: 'hand', total, txnId: uniqueHandId });
+                            }}
+                            style={{
+                                marginTop: '20px', width: '100%', padding: '14px', borderRadius: '12px',
+                                background: emeraldTeal, color: '#0a0e1a', border: 'none', fontWeight: '800',
+                                fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', transition: 'all 0.3s ease',
+                                boxShadow: '0 5px 15px rgba(0, 212, 170, 0.3)'
+                            }}
+                            onMouseOver={e=>e.currentTarget.style.transform='scale(1.02)'}
+                            onMouseOut={e=>e.currentTarget.style.transform='scale(1)'}
+                        >
+                            CONFIRM CASH ORDER
+                        </button>
                     </div>
                 </div>
             )}

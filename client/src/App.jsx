@@ -7,6 +7,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminRegisterPage from './pages/AdminRegisterPage';
 import AdminVerifyNoticePage from './pages/AdminVerifyNoticePage';
 import AdminVerifyEmailPage from './pages/AdminVerifyEmailPage';
+import ModifyOrder from './pages/ModifyOrder';
 
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
@@ -24,6 +25,7 @@ export default function App() {
                     <Route path="/admin/verify-notice" element={<AdminVerifyNoticePage />} />
                     <Route path="/admin/verify-email/:token" element={<AdminVerifyEmailPage />} />
                     <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                    <Route path="/modify-order" element={<ModifyOrder />} />
                     </Routes>
                 </BrowserRouter>
             </ConfirmProvider>

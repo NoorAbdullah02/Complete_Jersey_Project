@@ -86,6 +86,7 @@ export default function OrderPage() {
         // Map fields to match server schema
         const mappedItems = formData.items.map(item => ({
             ...item,
+            batch: formData.batch, // Inject global batch into items
             itemPrice: item.price // Server expects itemPrice
         }));
 

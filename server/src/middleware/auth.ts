@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-    user?: { id: number; username: string; role?: string };
+    user?: { id: number; username?: string; email?: string; role?: string };
 }
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -18,7 +18,9 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
         const secret = process.env.JWT_SECRET || 'fallback-secret';
         const decoded = jwt.verify(token, secret) as {
             id: number;
-            username: string;
+            username?: string;
+            email?: string;
+            role?: string;
         };
         req.user = decoded;
         next();

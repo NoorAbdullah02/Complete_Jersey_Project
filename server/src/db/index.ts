@@ -1,26 +1,45 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Client } from 'pg';
+import { Pool, Client } from 'pg';
 import * as schema from './schema';
 import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-let client: Client | null = null;
+let pool: Pool | null = null;
+let drizzleDb: any = null;
 
-export async function getDb(): Promise<{ db: any; client: Client }> {
+export async function getDb(): Promise<{ db: any; client: any }> {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required');
   }
 
-  const c = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-  });
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+      max: 20, // max concurrent connections
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
 
-  await c.connect();
-  const db = drizzle(c, { schema });
-  return { db, client: c };
+    pool.on('error', (err, client) => {
+      console.error('Unexpected error on idle pg client', err);
+    });
+
+    drizzleDb = drizzle(pool, { schema });
+  }
+
+  const client = await pool.connect();
+  // We attach a pseudo-end method so existing code calling `await client.end()` just releases the client back to the pool
+  let released = false;
+  (client as any).end = async () => {
+    if (!released) {
+      released = true;
+      client.release();
+    }
+  };
+  return { db: drizzleDb, client };
 }
 
 export async function initDb(): Promise<void> {
@@ -41,10 +60,10 @@ export async function initDb(): Promise<void> {
   await c.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(30) NOT NULL,
-      mobile_number VARCHAR(15) NOT NULL,
-      email VARCHAR(40) NOT NULL,
-      transaction_id VARCHAR(30),
+      name VARCHAR(100) NOT NULL,
+      mobile_number VARCHAR(20) NOT NULL,
+      email VARCHAR(100) NOT NULL,
+      transaction_id VARCHAR(40),
       notes TEXT,
       final_price DECIMAL(10, 2) NOT NULL,
       status VARCHAR(20) DEFAULT 'pending',
@@ -52,6 +71,16 @@ export async function initDb(): Promise<void> {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Migration: Upgrade VARCHAR lengths for existing DBs
+  try {
+    await c.query('ALTER TABLE orders ALTER COLUMN name TYPE VARCHAR(100)');
+    await c.query('ALTER TABLE orders ALTER COLUMN email TYPE VARCHAR(100)');
+    await c.query('ALTER TABLE orders ALTER COLUMN mobile_number TYPE VARCHAR(20)');
+    await c.query('ALTER TABLE orders ALTER COLUMN transaction_id TYPE VARCHAR(40)');
+  } catch (e) {
+    // Ignore if columns already resized 
+  }
 
   await c.query(`
     CREATE TABLE IF NOT EXISTS admin_users (
@@ -82,9 +111,28 @@ export async function initDb(): Promise<void> {
       name VARCHAR(60),
       password_hash VARCHAR(200),
       is_verified BOOLEAN DEFAULT false,
+      refresh_token VARCHAR(500),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS user_otps (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(100) NOT NULL,
+      otp VARCHAR(6) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Ensure 'refresh_token' column exists for users in legacy installations
+  try {
+    await c.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token VARCHAR(500)');
+  } catch (e) {
+    // Column might already exist
+  }
 
   await c.query(`
     CREATE TABLE IF NOT EXISTS authenticators (
@@ -206,13 +254,37 @@ export async function initDb(): Promise<void> {
     CREATE TABLE IF NOT EXISTS order_items (
       id SERIAL PRIMARY KEY,
       order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-      jersey_number VARCHAR(6) NOT NULL,
-      jersey_name VARCHAR(30),
-      batch VARCHAR(15),
-      size VARCHAR(10) NOT NULL,
-      collar_type VARCHAR(20) NOT NULL,
-      sleeve_type VARCHAR(20) NOT NULL,
+      jersey_number VARCHAR(10) NOT NULL,
+      jersey_name VARCHAR(100),
+      batch VARCHAR(50),
+      size VARCHAR(20) NOT NULL,
+      collar_type VARCHAR(30) NOT NULL,
+      sleeve_type VARCHAR(30) NOT NULL,
       item_price DECIMAL(10, 2) NOT NULL
+    )
+  `);
+
+  // Migration: Upgrade order_items VARCHAR lengths
+  try {
+    await c.query('ALTER TABLE order_items ALTER COLUMN jersey_name TYPE VARCHAR(100)');
+    await c.query('ALTER TABLE order_items ALTER COLUMN batch TYPE VARCHAR(50)');
+    await c.query('ALTER TABLE order_items ALTER COLUMN size TYPE VARCHAR(20)');
+    await c.query('ALTER TABLE order_items ALTER COLUMN collar_type TYPE VARCHAR(30)');
+    await c.query('ALTER TABLE order_items ALTER COLUMN sleeve_type TYPE VARCHAR(30)');
+    await c.query('ALTER TABLE order_items ALTER COLUMN jersey_number TYPE VARCHAR(10)');
+  } catch (e) {
+    // Ignore migration errors
+  }
+
+  // 2. Logging & Audit Tables
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS order_logs (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      action VARCHAR(150) NOT NULL,
+      details TEXT,
+      performed_by VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 

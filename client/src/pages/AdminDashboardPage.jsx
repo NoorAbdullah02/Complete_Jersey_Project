@@ -235,6 +235,22 @@ export default function AdminDashboardPage() {
         items: []
     });
 
+    const [selectedOrderLogs, setSelectedOrderLogs] = useState([]);
+    const [loadingLogs, setLoadingLogs] = useState(false);
+
+    const fetchLogsForAdmin = async (orderId) => {
+        setLoadingLogs(true);
+        try {
+            const res = await getOrderLogs(orderId);
+            setSelectedOrderLogs(res.data.logs || []);
+        } catch (err) {
+            console.error('Failed to fetch logs:', err);
+            setSelectedOrderLogs([]);
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
+
     const chartData = React.useMemo(() => {
         const dailyData = {};
 
@@ -382,6 +398,7 @@ export default function AdminDashboardPage() {
             }))
         });
         setShowEditModal(true);
+        fetchLogsForAdmin(order.id);
     };
 
     const handleUpdateOrder = async (e) => {
@@ -1415,9 +1432,59 @@ export default function AdminDashboardPage() {
                                 })}
                             </div>
 
-                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                                <button type="button" style={styles.btn('#475569')} onClick={() => setShowEditModal(false)}>Cancel</button>
-                                <button type="submit" style={styles.btn('#667eea')}>Save Changes</button>
+                            <div style={{ marginTop: '32px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '24px' }}>
+                                <h4 style={{ color: '#667eea', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fas fa-history"></i> Modification History
+                                </h4>
+                                
+                                {loadingLogs ? (
+                                    <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Loading history...</p>
+                                ) : selectedOrderLogs.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {selectedOrderLogs.map((log) => {
+                                            const details = JSON.parse(log.details || '{}');
+                                            return (
+                                                <div key={log.id} style={{
+                                                    padding: '12px 16px',
+                                                    background: 'rgba(255,255,255,0.02)',
+                                                    border: '1px solid rgba(255,255,255,0.05)',
+                                                    borderRadius: '12px',
+                                                    fontSize: '0.85rem'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                        <span style={{ fontWeight: 700, color: '#fff' }}>{log.action === 'USER_MODIFIED_ITEM' ? 'User Modified Jersey' : log.action}</span>
+                                                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>{new Date(log.created_at).toLocaleString()}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {Object.entries(details).map(([field, vals]) => (
+                                                            <div key={field} style={{
+                                                                background: 'rgba(0,0,0,0.2)',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '8px',
+                                                                fontSize: '0.75rem',
+                                                                border: '1px solid rgba(255,255,255,0.05)'
+                                                            }}>
+                                                                <span style={{ color: '#667eea', fontWeight: 700, textTransform: 'capitalize' }}>{field}:</span> {vals.old} → <span style={{ color: '#fff' }}>{vals.new}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div style={{ marginTop: '6px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>
+                                                        Performed by: {log.performed_by || 'Unknown'}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '16px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                                        No modifications recorded for this order.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '40px', justifyContent: 'flex-end', position: 'sticky', bottom: '-32px', background: '#1e293b', padding: '16px 0', borderTop: '1px solid rgba(255,255,255,0.1)', zIndex: 10 }}>
+                                <button type="button" style={styles.btn('rgba(255,255,255,0.1)')} onClick={() => setShowEditModal(false)}>Cancel</button>
+                                <button type="submit" style={styles.btn('linear-gradient(135deg, #667eea, #764ba2)')}>Save Changes</button>
                             </div>
                         </form>
                     </div>
