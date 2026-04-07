@@ -11,7 +11,7 @@ export async function sendEmail(
   textContent: string
 ): Promise<EmailResult> {
   const apiKey = process.env.BREVO_API_KEY;
-  const fromEmail = process.env.BREVO_FROM_EMAIL;
+  const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.ADMIN_EMAIL;
   const fromName = process.env.BREVO_FROM_NAME || 'ICE Jersey';
 
   if (!apiKey) {

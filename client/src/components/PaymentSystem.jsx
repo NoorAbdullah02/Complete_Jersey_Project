@@ -167,45 +167,122 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
             </div>
 
             {/* Method Selection Title */}
-            <div className="ps-entrance mb-3 text-center">
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '3px', textTransform: 'uppercase' }}>PAYMENT METHOD</span>
+            <div className="ps-entrance mb-4 text-center">
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ color: '#fff', fontSize: '0.9rem', fontWeight: '800', letterSpacing: '3px', textTransform: 'uppercase', textShadow: '0 0 10px rgba(255, 255, 255, 0.3)' }}>
+                            PAYMENT METHOD
+                        </span>
+                        <span style={{ 
+                            background: 'rgba(239, 68, 68, 0.25)', 
+                            color: '#ef4444', 
+                            fontSize: '0.65rem', 
+                            padding: '4px 12px', 
+                            borderRadius: '12px', 
+                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            fontWeight: '900',
+                            letterSpacing: '1px',
+                            boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)',
+                            animation: 'ps-glow-red 2s infinite ease-in-out'
+                        }}>
+                            REQUIRED
+                        </span>
+                    </div>
+                    {!method && (
+                        <span className="ps-method-prompt" style={{ color: primaryICE, fontSize: '0.75rem', fontWeight: '600', letterSpacing: '1px', opacity: 0.8 }}>
+                            <i className="fas fa-arrow-down me-2"></i>
+                            PLEASE SELECT A METHOD BELOW
+                            <i className="fas fa-arrow-down ms-2"></i>
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Method Cards */}
-            <div className="ps-entrance row g-3 mb-4">
+            <div className="ps-entrance row g-3 mb-5">
                 <div className="col-sm-6">
-                    <div onClick={handleOnlinePayment} style={tileStyle(method === 'online', primaryICE)}
-                         onMouseOver={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                         onMouseOut={(e) => { if(method !== 'online') e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
+                    <div onClick={handleOnlinePayment} 
+                         style={{
+                             ...tileStyle(method === 'online', primaryICE),
+                             border: method === 'online' ? `2px solid ${primaryICE}` : (!method ? '1px dashed rgba(0, 242, 254, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)'),
+                             boxShadow: method === 'online' ? `0 0 25px rgba(0, 242, 254, 0.3)` : (method ? 'none' : '0 0 10px rgba(0, 242, 254, 0.1)')
+                         }}
+                         className={!method ? "ps-pulse-card-ice" : ""}
+                         onMouseOver={(e) => { if(method !== 'online') { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = `0 0 20px rgba(0, 242, 254, 0.2)`; } }}
+                         onMouseOut={(e) => { if(method !== 'online') { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.boxShadow = !method ? '0 0 10px rgba(0, 242, 254, 0.1)' : 'none'; } }}>
                         <div style={{
                             width: '50px', height: '50px', borderRadius: '14px',
-                            background: 'rgba(0, 242, 254, 0.1)', color: primaryICE,
+                            background: method === 'online' ? `rgba(0, 242, 254, 0.3)` : 'rgba(0, 242, 254, 0.1)', color: primaryICE,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,242,254,0.2)'
+                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,242,254,0.3)',
+                            boxShadow: method === 'online' ? `0 0 15px rgba(0, 242, 254, 0.4)` : 'none'
                         }}>
                             <i className="fas fa-globe"></i>
                         </div>
                         <h4 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '700', margin: '0 0 5px 0', fontFamily: "'Space Grotesk', sans-serif" }}>Mobile Banking</h4>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: '500' }}>bKash / Nagad</span>
+                        {method === 'online' && <div style={{ position: 'absolute', top: '10px', right: '10px', color: primaryICE, textShadow: `0 0 10px ${primaryICE}` }}><i className="fas fa-check-circle"></i></div>}
                     </div>
                 </div>
                 <div className="col-sm-6">
-                    <div onClick={handleHandCash} style={tileStyle(method === 'hand', emeraldTeal)}
-                         onMouseOver={(e) => { if(method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                         onMouseOut={(e) => { if(method !== 'hand') e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
+                    <div onClick={handleHandCash} 
+                         style={{ 
+                             ...tileStyle(method === 'hand', emeraldTeal),
+                             border: method === 'hand' ? `2px solid ${emeraldTeal}` : (!method ? '1px dashed rgba(79, 172, 254, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)'),
+                             boxShadow: method === 'hand' ? `0 0 25px rgba(79, 172, 254, 0.3)` : (method ? 'none' : '0 0 10px rgba(79, 172, 254, 0.1)')
+                         }}
+                         className={!method ? "ps-pulse-card-teal" : ""}
+                         onMouseOver={(e) => { if(method !== 'hand') { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = `0 0 20px rgba(79, 172, 254, 0.2)`; } }}
+                         onMouseOut={(e) => { if(method !== 'hand') { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.boxShadow = !method ? '0 0 10px rgba(79, 172, 254, 0.1)' : 'none'; } }}>
                         <div style={{
                             width: '50px', height: '50px', borderRadius: '14px',
-                            background: 'rgba(0, 212, 170, 0.1)', color: emeraldTeal,
+                            background: method === 'hand' ? `rgba(0, 212, 170, 0.3)` : 'rgba(0, 212, 170, 0.1)', color: emeraldTeal,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,212,170,0.2)'
+                            fontSize: '1.4rem', marginBottom: '15px', border: '1px solid rgba(0,212,170,0.3)',
+                            boxShadow: method === 'hand' ? `0 0 15px rgba(0, 212, 170, 0.4)` : 'none'
                         }}>
                             <i className="fas fa-wallet"></i>
                         </div>
                         <h4 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '700', margin: '0 0 5px 0', fontFamily: "'Space Grotesk', sans-serif" }}>Cash / CR</h4>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: '500' }}>Direct transfer</span>
+                        {method === 'hand' && <div style={{ position: 'absolute', top: '10px', right: '10px', color: emeraldTeal, textShadow: `0 0 10px ${emeraldTeal}` }}><i className="fas fa-check-circle"></i></div>}
                     </div>
                 </div>
             </div>
+
+            <style>
+                {`
+                    @keyframes ps-pulse {
+                        0% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.8; transform: scale(0.99); }
+                        100% { opacity: 1; transform: scale(1); }
+                    }
+                    @keyframes ps-glow-ice {
+                        0% { box-shadow: 0 0 10px rgba(0, 242, 254, 0.1); }
+                        50% { box-shadow: 0 0 25px rgba(0, 242, 254, 0.4); }
+                        100% { box-shadow: 0 0 10px rgba(0, 242, 254, 0.1); }
+                    }
+                    @keyframes ps-glow-teal {
+                        0% { box-shadow: 0 0 10px rgba(79, 172, 254, 0.1); }
+                        50% { box-shadow: 0 0 25px rgba(79, 172, 254, 0.4); }
+                        100% { box-shadow: 0 0 10px rgba(79, 172, 254, 0.1); }
+                    }
+                    @keyframes ps-glow-red {
+                        0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.2); }
+                        50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+                        100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.2); }
+                    }
+                    .ps-pulse-card-ice {
+                        animation: ps-pulse 2s infinite ease-in-out, ps-glow-ice 3s infinite ease-in-out;
+                    }
+                    .ps-pulse-card-teal {
+                        animation: ps-pulse 2s infinite ease-in-out, ps-glow-teal 3s infinite ease-in-out;
+                    }
+                    .ps-method-prompt {
+                        animation: ps-pulse 1.5s infinite ease-in-out;
+                    }
+                `}
+            </style>
 
             {/* Receipt Summary */}
             <div className="ps-entrance" style={{ ...glassPanelStyle, padding: '30px' }}>

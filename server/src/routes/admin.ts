@@ -61,7 +61,7 @@ router.post('/register', validate(adminRegisterSchema), async (req: Request, res
                 });
             }
 
-            // Send verification email
+            // Send verification email to the new admin
             const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
             const verifyUrl = `${clientUrl}/admin/verify-email/${verificationToken}`;
             await sendEmail(
@@ -70,6 +70,31 @@ router.post('/register', validate(adminRegisterSchema), async (req: Request, res
                 adminVerificationHtml(name || username, verifyUrl),
                 `Verify your email: ${verifyUrl}`
             );
+
+            // Notify Super Admin if configured
+            if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL !== email.trim()) {
+                await sendEmail(
+                    process.env.ADMIN_EMAIL,
+                    'New Admin Registration Pending - ICE Jersey',
+                    `
+                        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                            <h2 style="color: #667eea;">New Admin Sign-up</h2>
+                            <p>A new admin account has been created and is awaiting verification.</p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                            <ul style="list-style: none; padding: 0;">
+                                <li><strong>Username:</strong> ${username}</li>
+                                <li><strong>Name:</strong> ${name || 'N/A'}</li>
+                                <li><strong>Email:</strong> ${email}</li>
+                                <li><strong>Role:</strong> ${role || 'support'}</li>
+                            </ul>
+                            <p style="font-size: 0.9rem; color: #666; margin-top: 20px;">
+                                This is an automated notification from the ICE Jersey Portal.
+                            </p>
+                        </div>
+                    `,
+                    `New admin registration: ${username} (${email})`
+                );
+            }
 
             res.status(201).json({
                 success: true,
