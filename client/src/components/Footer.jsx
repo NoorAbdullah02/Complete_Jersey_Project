@@ -59,7 +59,7 @@ export default function Footer() {
                                     className="btn btn-primary"
                                     onClick={() => navigate('/admin')}
                                 >
-                                    <span className="btn-text">Admin Login</span>
+                                    <span className="btn-text">ICE-14th</span>
                                     <span className="btn-icon">→</span>
                                 </button>
                             </div>
