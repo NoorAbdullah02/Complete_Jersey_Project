@@ -1,6 +1,30 @@
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+import fs from 'fs';
+
+// Try multiple possible locations for .env file to handle both dev and production
+const envPaths = [
+    path.join(__dirname, '..', '.env'),               // src/.. = server root (dev)
+    path.join(__dirname, '..', '..', '.env'),         // dist/src/.. (production)
+    path.join(process.cwd(), '.env'),                 // current working directory
+    path.join(process.cwd(), 'server', '.env'),       // server subfolder
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+        const result = dotenv.config({ path: envPath });
+        if (result.parsed) {
+            console.log(`✅ Environment loaded from: ${envPath}`);
+            envLoaded = true;
+            break;
+        }
+    }
+}
+
+if (!envLoaded) {
+    console.warn('⚠️ No .env file found in standard locations. Relying on process.env variables.');
+}
 
 import express from 'express';
 import { createServer } from 'http';
@@ -8,7 +32,6 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import fs from 'fs';
 import { initDb } from './db/index';
 import { csrfProtection } from './middleware/csrf';
 
@@ -31,22 +54,19 @@ const io = new Server(httpServer, {
     }
 });
 
-// Debug environment loading
 console.log('--- Environment Check ---');
 console.log('PORT:', process.env.PORT || '3000 (default)');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED (Safe)' : 'MISSING (Critical!)');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 console.log('------------------------');
 
-// Enable trust proxy if configured
 if (process.env.TRUST_PROXY === 'true') {
-    app.set('trust proxy', 1); // Trust first hop
+    app.set('trust proxy', 1);
 } else {
     app.set('trust proxy', false);
 }
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -60,14 +80,12 @@ app.use(helmet({
     },
 }));
 
-// Rate limiters
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     validate: { trustProxy: false }, // Disable trust proxy validation to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
 });
 
-// Basic middleware
 app.use(cors());
 app.use((req, res, next) => {
     console.log(`[REQ] ${req.method} ${req.url}`);
@@ -77,13 +95,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(csrfProtection); // Apply CSRF protection
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// SPA fallback
 const clientDist = path.resolve(process.cwd(), '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {
     app.use(express.static(clientDist));
 }
 
-// WebSocket Logic
 io.on('connection', (socket) => {
     console.log(`📡 New WebSocket connection: ${socket.id}`);
 
@@ -97,10 +113,8 @@ io.on('connection', (socket) => {
     });
 });
 
-// Global export of IO for use in routes
 app.set('io', io);
 
-// Health check
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -109,7 +123,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user-auth', userAuthRoutes);
 app.use('/api/orders', apiLimiter, orderRoutes);
@@ -119,7 +132,6 @@ app.use('/api/admin/expenses', expenseRoutes);
 app.use('/api/admin/reports', reportRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 
-// SPA fallback / 404 handler
 app.use('*', (req, res) => {
     const clientDist = path.resolve(process.cwd(), '..', 'client', 'dist');
     if (req.method === 'GET' && !req.path.startsWith('/api') && fs.existsSync(clientDist)) {
@@ -128,7 +140,6 @@ app.use('*', (req, res) => {
     return res.status(404).json({ error: 'Route not found' });
 });
 
-// Global error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Global error:', error);
     if (error instanceof Error) {
@@ -144,12 +155,32 @@ const startServer = async () => {
         if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is required');
         }
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET environment variable is required');
+        }
+
         await initDb();
-        httpServer.listen(PORT, () => {
+
+        // Listen on 0.0.0.0 for production deployment compatibility (Render, Railway, etc.)
+        const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+        httpServer.listen({
+            port: PORT,
+            host: HOST
+        }, () => {
             console.log(`\n🚀 ICE JERSEY PRODUCTION SERVER STARTED!`);
-            console.log(`📍 URL: http://localhost:${PORT}`);
+            console.log(`📍 Listening on ${HOST}:${PORT}`);
             console.log(`🔒 Security: Helmet + CSRF + Rate Limiting enabled`);
             console.log(`📡 Real-time: Socket.io backend active\n`);
+        });
+
+        // Graceful shutdown
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM received, shutting down gracefully...');
+            httpServer.close(() => {
+                console.log('Server closed');
+                process.exit(0);
+            });
         });
     } catch (error) {
         console.error('Failed to start server:', error);
