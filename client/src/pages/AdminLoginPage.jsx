@@ -105,7 +105,7 @@ export default function AdminLoginPage() {
                         fontFamily: "'Orbitron', monospace",
                         fontSize: '1.5rem',
                         fontWeight: '800',
-                    }}>Admin Login</h2>
+                    }}>ICE-14th</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         ICE Jersey Management System
                     </p>
