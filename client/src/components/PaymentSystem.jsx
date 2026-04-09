@@ -281,6 +281,34 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                     .ps-method-prompt {
                         animation: ps-pulse 1.5s infinite ease-in-out;
                     }
+
+                    @media (max-width: 576px) {
+                        .ps-modal-inner {
+                            padding: 25px 20px !important;
+                        }
+                        .ps-modal-header-text {
+                            font-size: 1.1rem !important;
+                            letter-spacing: 0.5px !important;
+                        }
+                        .ps-payment-number {
+                            font-size: 1.1rem !important;
+                            letter-spacing: 1px !important;
+                        }
+                        .ps-footer-btns {
+                            flex-direction: column !important;
+                            gap: 15px !important;
+                        }
+                        .ps-footer-btns button {
+                            width: 100% !important;
+                            flex: none !important;
+                        }
+                        .ps-carrier-tile {
+                            padding: 15px 10px !important;
+                        }
+                        .ps-carrier-tile span {
+                            font-size: 0.9rem !important;
+                        }
+                    }
                 `}
             </style>
 
@@ -356,12 +384,13 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                     background: 'rgba(10, 14, 26, 0.85)', backdropFilter: 'blur(12px)', zIndex: 1000,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+                    overflowY: 'auto'
                 }}>
-                    <div ref={modalRef} style={{ ...glassPanelStyle, width: '100%', maxWidth: '480px', padding: '35px', border: '1px solid rgba(240,165,0,0.2)' }}>
+                    <div ref={modalRef} className="ps-modal-inner" style={{ ...glassPanelStyle, width: '100%', maxWidth: '480px', padding: '35px', border: '1px solid rgba(240,165,0,0.2)', margin: 'auto' }}>
                         <div className="d-flex justify-content-between align-items-start mb-4">
                             <div>
-                                <h4 style={{ color: '#fff', margin: 0, fontFamily: "'Orbitron', sans-serif", fontWeight: '700', letterSpacing: '1px' }}>SELECT GATEWAY</h4>
+                                <h4 className="ps-modal-header-text" style={{ color: '#fff', margin: 0, fontFamily: "'Orbitron', sans-serif", fontWeight: '700', letterSpacing: '1px' }}>SELECT GATEWAY</h4>
                                 <p style={{ color: primaryICE, fontSize: '0.85rem', fontWeight: '600', margin: '5px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Encrypted Channel</p>
                             </div>
                             <button onClick={closePortal} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.4rem', padding: '0', transition: 'color 0.2s' }}
@@ -374,6 +403,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                             {Object.entries(CARRIERS).map(([key, data]) => (
                                 <div key={key} className="col-6">
                                     <div onClick={() => setProvider(key)}
+                                        className="ps-carrier-tile"
                                         style={{
                                             ...tileStyle(provider === key, data.color),
                                             padding: '24px 20px',
@@ -397,8 +427,8 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                         {provider && (
                             <div className="p-4 mb-4" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>SEND MONEY TO</label>
-                                <div className="d-flex align-items-center justify-content-between mb-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 20px', borderRadius: '12px' }}>
-                                    <span style={{ color: '#fff', fontFamily: "'Orbitron', monospace", fontSize: '1.3rem', fontWeight: '700', letterSpacing: '2px' }}>{CARRIERS[provider].number}</span>
+                                <div className="d-flex align-items-center justify-content-between mb-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 20px', borderRadius: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                                    <span className="ps-payment-number" style={{ color: '#fff', fontFamily: "'Orbitron', monospace", fontSize: '1.3rem', fontWeight: '700', letterSpacing: '2px' }}>{CARRIERS[provider].number}</span>
                                     <button onClick={() => copyToClipboard(CARRIERS[provider].number)} style={{ background: 'transparent', border: 'none', color: CARRIERS[provider].color, fontSize: '1.2rem', transition: 'transform 0.2s' }}
                                             onMouseOver={e=>e.currentTarget.style.transform='scale(1.1)'} onMouseOut={e=>e.currentTarget.style.transform='scale(1)'}>
                                         <i className="fas fa-copy"></i>
@@ -438,7 +468,7 @@ const PaymentSystem = ({ amount: initialAmount = 0, onFinalConfirm }) => {
                             </div>
                         )}
 
-                        <div className="d-flex gap-3 mt-5">
+                        <div className="d-flex gap-3 ps-footer-btns mt-5">
                             <button onClick={closePortal} style={{ flex: 1, padding: '16px', borderRadius: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: '600', letterSpacing: '1px', transition: 'all 0.2s' }}
                                     onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
                                 CANCEL
